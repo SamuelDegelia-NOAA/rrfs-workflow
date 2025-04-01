@@ -16,17 +16,17 @@ cd $validated_yamls
 ###########################################
 
 # EnVar
-#basic_config="mpasjedi_hyb3denvar.yaml"
+#basic_config="jedivar_base.yaml"
 #fnialyaml="jedivar.yaml"
 #distribution="RoundRobin"
 
 # GETKF observer
-#basic_config="mpasjedi_getkf_observer_wflow.yaml"
+#basic_config="getkf_observer_base.yaml"
 #finalyaml="getkf_observer.yaml"
 #distribution="RoundRobin"
 
 # GETKF solver
-basic_config="mpasjedi_getkf_solver_wflow.yaml"
+basic_config="getkf_solver_base.yaml"
 finalyaml="getkf_solver.yaml"
 distribution="Halo"
 
@@ -113,7 +113,7 @@ for config in "${obtype_configs[@]}"; do
 done
 
 # Copy the basic configuration yaml into the super yaml
-cp -p templates/basic_config/$basic_config ./${finalyaml}
+cp -p ../../parm/$basic_config ./${finalyaml}
 
 # Replace @OBSERVATIONS@ placeholder with the contents of the combined yaml
 sed -i '/@OBSERVATIONS@/{
