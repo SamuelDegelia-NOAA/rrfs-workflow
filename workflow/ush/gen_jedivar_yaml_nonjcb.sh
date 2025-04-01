@@ -15,6 +15,9 @@ cd $validated_yamls
 ### Define the basic configuration YAML ###
 ###########################################
 
+### TODO: change to list and loop over the basic config files
+### TODO: do not commit basic_config files and instead use them from RDASApp (will need more replacements in getkf basic_configs)
+
 # EnVar
 #basic_config="jedivar_base.yaml"
 #fnialyaml="jedivar.yaml"
@@ -123,11 +126,12 @@ sed -i '/@OBSERVATIONS@/{
 rm -f input.yaml temp.yaml # Clean up temporary yaml
 
 # Temporary solution, replace actual date strings with placeholders
-date_pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z"
+date_pattern='[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}T[0-9]\{2\}:[0-9]\{2\}:[0-9]\{2\}Z'
+date_pattern_seed="[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z" # TODO, DO WE NEED BOTH??
 sed -i -E \
     -e "s/date: &analysisDate '$date_pattern'/date: &analysisDate '@analysisDate@'/" \
     -e "s/begin: '$date_pattern'/begin: '@beginDate@'/" \
-    -e "s/seed_time: \"$date_pattern\"/seed_time: '@analysisDate@'/" \
+    -e "s/seed_time: \"$date_pattern_seed\"/seed_time: '@analysisDate@'/" \
     -e "s/length: PT[0-9]H/length: 'PT${length}H'/" \
     -e "s/@DISTRIBUTION@/$distribution/" \
     -e "s/request_saturation_specific_humidity_geovals: true/request_saturation_specific_humidity_geovals: false/" \
