@@ -11,12 +11,21 @@ validated_yamls="${run_dir}/../../sorc/RDASApp/rrfs-test/validated_yamls"
 currdir=`pwd`
 cd $validated_yamls
 
-# Define the basic configuration YAML
-#basic_config="mpasjedi_hyb3denvar.yaml"
+###########################################
+### Define the basic configuration YAML ###
+###########################################
 
+# EnVar
+#basic_config="mpasjedi_hyb3denvar.yaml"
+#fnialyaml="jedivar.yaml"
+#distribution="RoundRobin"
+
+# GETKF observer
 #basic_config="mpasjedi_getkf_observer_wflow.yaml"
 #finalyaml="getkf_observer.yaml"
 #distribution="RoundRobin"
+
+# GETKF solver
 basic_config="mpasjedi_getkf_solver_wflow.yaml"
 finalyaml="getkf_solver.yaml"
 distribution="Halo"
@@ -140,11 +149,6 @@ sed -i \
     -e "s/@HYB_WGT_STATIC@/${HYB_WGT_STATIC}/" \
     -e "s/@HYB_WGT_ENS@/${HYB_WGT_ENS}/" \
     ./${finalyaml}
-
-## Remove duplicate check filter from solver since we do not have LLP variable
-#if [[ $finalyaml == "getkf_solver.yaml" ]]; then
-#   python ${currdir}/commentQC.py ${finalyaml}
-#fi
 
 echo "Super YAML created in ${finalyaml}"
 
