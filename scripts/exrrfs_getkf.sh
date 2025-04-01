@@ -86,8 +86,14 @@ case ${YAML_GEN_METHOD:-1} in
   1) # from ${PARMrrfs}
     source "${USHrrfs}"/yaml_from_parm.sh "getkf"
     ;;
-  2) # cat together from inside sorc/RDASApp
-    source "${USHrrfs}"/yaml_cat_together.sh
+  2) # update placeholders in static yaml from gen_jedivar_yaml_nonjcb.sh
+    if [[ "${TYPE}" == "observer" ]]; then
+      source ${USHrrfs}/yaml_replace_placeholders.sh "getkf_observer.yaml"
+      mv getkf_observer.yaml getkf.yaml
+    elif [[ "${TYPE}" == "solver" ]]; then
+      source ${USHrrfs}/yaml_replace_placeholders.sh "getkf_solver.yaml"
+      mv getkf_solver.yaml getkf.yaml
+    fi
     ;;
   3) # JCB
     source "${USHrrfs}"/yaml_jcb.sh
