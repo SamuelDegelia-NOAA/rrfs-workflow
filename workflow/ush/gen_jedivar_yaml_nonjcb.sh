@@ -21,14 +21,14 @@ cd $validated_yamls
 #distribution="RoundRobin"
 
 # GETKF observer
-#basic_config="getkf_observer_base.yaml"
-#finalyaml="getkf_observer.yaml"
-#distribution="RoundRobin"
+basic_config="getkf_observer_base.yaml"
+finalyaml="getkf_observer.yaml"
+distribution="RoundRobin"
 
 # GETKF solver
-basic_config="getkf_solver_base.yaml"
-finalyaml="getkf_solver.yaml"
-distribution="Halo"
+#basic_config="getkf_solver_base.yaml"
+#finalyaml="getkf_solver.yaml"
+#distribution="Halo"
 
 # Analysis window length
 length=4
@@ -113,7 +113,7 @@ for config in "${obtype_configs[@]}"; do
 done
 
 # Copy the basic configuration yaml into the super yaml
-cp -p ../../parm/$basic_config ./${finalyaml}
+cp -p ${run_dir}/../../parm/$basic_config ./${finalyaml}
 
 # Replace @OBSERVATIONS@ placeholder with the contents of the combined yaml
 sed -i '/@OBSERVATIONS@/{
@@ -153,11 +153,10 @@ sed -i \
 echo "Super YAML created in ${finalyaml}"
 
 # Save to where gen yamls was run
-cp -p ${finalyaml} ${run_dir}/.
+#cp -p ${finalyaml} ${run_dir}/.
 
 # Save to parm directory
 cp -p ${finalyaml} ${run_dir}/../../parm/.
-rm ${finalyaml}
 
 echo "Generated ${finalyaml} to:"
 echo "   ${run_dir}/../../parm/${finalyaml}"
