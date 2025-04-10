@@ -93,6 +93,9 @@ case ${YAML_GEN_METHOD:-1} in
     elif [[ "${TYPE}" == "solver" ]]; then
       source ${USHrrfs}/yaml_replace_placeholders.sh "getkf_solver.yaml"
       mv getkf_solver.yaml getkf.yaml
+      if [[ ${start_type} == "cold" ]]; then
+        sed -i '13s/ens/ana/' getkf.yaml
+      fi
     fi
     ;;
   3) # JCB
