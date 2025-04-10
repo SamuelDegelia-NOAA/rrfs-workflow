@@ -15,16 +15,16 @@ ${cpreq} "${EXECrrfs}"/bufr2ioda.x .
 # generate the namelist on the fly
 REFERENCE_TIME="${CDATE:0:4}-${CDATE:4:2}-${CDATE:6:2}T${CDATE:8:2}:00:00Z"
 yaml_list=(
-#"prepbufr_adpsfc.yaml"
+"prepbufr_adpsfc.yaml"
 "prepbufr_adpupa.yaml"
 "prepbufr_aircar.yaml"
-#"prepbufr_aircft.yaml"
-#"prepbufr_ascatw.yaml"
-#"prepbufr_msonet.yaml"
-#"prepbufr_proflr.yaml"
-#"prepbufr_rassda.yaml"
-#"prepbufr_sfcshp.yaml"
-#"prepbufr_vadwnd.yaml"
+"prepbufr_aircft.yaml"
+"prepbufr_ascatw.yaml"
+"prepbufr_msonet.yaml"
+"prepbufr_proflr.yaml"
+"prepbufr_rassda.yaml"
+"prepbufr_sfcshp.yaml"
+"prepbufr_vadwnd.yaml"
 )
 
 if (( ${YAML_GEN_METHOD:-1} == 2 )); then
