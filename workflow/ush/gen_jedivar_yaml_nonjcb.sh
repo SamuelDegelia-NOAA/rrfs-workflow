@@ -149,10 +149,11 @@ for basic_config in "${basic_configs[@]}"; do
 
     # Additional replacements for GETKF yamls 
     if [[ $final_yaml == "getkf_observer.yaml" ]] || [[ $final_yaml == "getkf_solver.yaml" ]]; then
+	date_pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}\.[0-9]{2}\.[0-9]{2}"
         sed -i -E \
            -e "s/filename: \.\/bkg\.\\\$Y\-\\\$M\-\\\$D_\\\$h\.\\\$m\.\\\$s\.nc/filename: .\/prior_mean.nc/" \
            -e "s/filename: \.\/ana\.\\\$Y\-\\\$M\-\\\$D_\\\$h\.\\\$m\.\\\$s\.nc/filename: .\/data\/ens\/mem%\{member\}%.nc/" \
-           -e "s/filename: \.\/data\/ens\/mem%iMember%\/mpasout\.[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}\.[0-9]{2}\.[0-9]{2}\.nc/filename: .\/data\/ens\/mem%iMember%.nc/" \
+           -e "s/filename: \.\/data\/ens\/mem%iMember%\/mpasout\.${date_pattern}\.nc/filename: .\/data\/ens\/mem%iMember%.nc/" \
            ./${final_yaml}
         # Remove the five lines associated with the built-in JEDI testing
         sed -i "/test:/,+4d" ./${final_yaml}
