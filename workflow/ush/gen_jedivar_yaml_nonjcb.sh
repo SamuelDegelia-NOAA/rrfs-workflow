@@ -128,7 +128,6 @@ for basic_config in "${basic_configs[@]}"; do
         -e "s/seed_time: \"$date_pattern\"/seed_time: '@analysisDate@'/" \
         -e "s/length: PT[0-9]H/length: 'PT${length}H'/" \
         -e "s/@DISTRIBUTION@/$distribution/" \
-        -e "s/request_saturation_specific_humidity_geovals: true/request_saturation_specific_humidity_geovals: false/" \
         ./${final_yaml}
 
     if [[ "${HYB_WGT_ENS}" == "0" ]] || [[ "${HYB_WGT_ENS}" == "0.0" ]]; then
