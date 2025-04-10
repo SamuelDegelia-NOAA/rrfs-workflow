@@ -116,8 +116,14 @@ for basic_config in "${basic_configs[@]}"; do
       r ./'"temp.yaml"'
       d
     }' ./${final_yaml}
-
     rm -f temp.yaml # Clean up temporary yaml
+
+    # Distribution changes for getkf solver
+    if [[ $final_yaml == "getkf_solver.yaml" ]]; then
+        distribution="Halo"
+    else
+        distribution="RoundRobin"
+    fi
 
     # Temporary solution, replace actual date strings with placeholders
     # Eventually the yaml templates in RDASApp will not be hardcoded 
