@@ -160,6 +160,7 @@ for basic_config in "${basic_configs[@]}"; do
            -e "s/filename: \.\/bkg\.\\\$Y\-\\\$M\-\\\$D_\\\$h\.\\\$m\.\\\$s\.nc/filename: .\/prior_mean.nc/" \
            -e "s/filename: \.\/ana\.\\\$Y\-\\\$M\-\\\$D_\\\$h\.\\\$m\.\\\$s\.nc/filename: .\/data\/ens\/mem%\{member\}%.nc/" \
            -e "s/filename: \.\/data\/ens\/mem%iMember%\/mpasout\.${date_pattern}\.nc/filename: .\/data\/ens\/mem%iMember%.nc/" \
+           -e "s/save posterior ensemble: false/save posterior ensemble: true/" \
            ./${final_yaml}
         # Remove the five lines associated with the built-in JEDI testing
         sed -i "/test:/,+4d" ./${final_yaml}
