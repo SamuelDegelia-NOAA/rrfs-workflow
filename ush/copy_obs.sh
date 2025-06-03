@@ -30,8 +30,12 @@ mappings["ioda_gnss_ztd.nc"]="${obspath}/ioda_gnss_ztd.nc"
 mappings["ioda_abi_g16.nc"]="${obspath}/ioda_abi_g16.nc"
 mappings["ioda_abi_g18.nc"]="${obspath}/ioda_abi_g18.nc"
 
-if [[ "${DO_ENVAR_RADAR_REF}" == "true" ]] && ${jedivar}; then
-  obspath="${COMOUT}/ioda_mrms_refl/${WGF}"
+if [[ "${DO_ENVAR_RADAR_REF}" == "true" ]]; then
+  if ${jedivar}; then
+    obspath="${COMOUT}/ioda_mrms_refl/${WGF}"
+  else # getkf
+    obspath="${COMOUT}/ioda_mrms_refl/${IODA_BUFR_WGF}"
+  fi
   mappings["ioda_mrms_refl.nc"]="${obspath}/ioda_mrms_${CDATE}_${time_min}.nc4"
 fi
 

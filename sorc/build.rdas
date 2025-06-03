@@ -48,6 +48,12 @@ cp ../_workaround_/RDASApp/ObsErrorFactorPressureCheck.h sorc/ufo/src/ufo/filter
 #cp ../_workaround_/RDASApp/CMakeLists.txt sorc/ufo/src/ufo
 #cp -r ../_workaround_/RDASApp/sfccorrected sorc/ufo/src/ufo/operators
 
+# workaround for direct radar refl DA
+# https://github.com/JCSDA-internal/mpas-jedi/pull/1045 by Yongming Wang
+cp ../_workaround_/RDASApp/direct_refl/mpas_fields_mod.F90 sorc/mpas-jedi/src/mpasjedi/Fields/mpas_fields_mod.F90
+cp ../_workaround_/RDASApp/direct_refl/mpas_state_mod.F90 sorc/mpas-jedi/src/mpasjedi/State/mpas_state_mod.F90
+cp ../_workaround_/RDASApp/direct_refl/mpas2ufo_vars_mod.F90 sorc/mpas-jedi/src/mpasjedi/Utilities/mpas2ufo_vars_mod.F90
+
 # workaround for compiling iodaconverter on Gaea
 # Junjun is working on a PR
 if [[ "${MACHINE}" == "gaea" ]]; then

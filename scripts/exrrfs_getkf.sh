@@ -9,6 +9,7 @@ cd "${DATA}" || exit 1
 
 start_time=$(date -d "${CDATE:0:8} ${CDATE:8:2}" +%Y-%m-%d_%H:%M:%S)
 timestr=$(date -d "${CDATE:0:8} ${CDATE:8:2}" +%Y-%m-%d_%H.%M.%S)
+time_min="${subcyc:-00}"
 #
 ln -snf "${FIXrrfs}/physics/${PHYSICS_SUITE}"/* .
 ln -snf "${FIXrrfs}/meshes/${MESH_NAME}.ugwp_oro_data.nc" ./ugwp_oro_data.nc
@@ -107,6 +108,11 @@ fi
 export OOPS_TRACE=1
 export OMP_NUM_THREADS=1
 
+# Copy background files for debugging
+for i in $(seq -w 001 "${ENS_SIZE}"); do
+  cp -rL data/ens/mem${i}.nc ${COMOUT}/getkf_${TYPE}/${WGF}/mem${i}_bkg.nc
+done
+
 source prep_step
 ${cpreq} "${EXECrrfs}"/mpasjedi_enkf.x .
 ${MPI_RUN_CMD} ./mpasjedi_enkf.x getkf.yaml log.out
@@ -123,7 +129,8 @@ if [[ "${TYPE}" == "observer" ]]; then
 else # move post mean to umbrella if solver
   # ncks increments to cold_start IC
   if [[ "${start_type}" == "cold" ]]; then
-    var_list="pressure_p,rho,qv,qc,qr,qi,qs,qg,ni,nr,ng,nc,nifa,nwfa,volg,surface_pressure,theta,u,uReconstructZonal,uReconstructMeridional"
+    #var_list="pressure_p,rho,qv,qc,qr,qi,qs,qg,ni,nr,ng,nc,nifa,nwfa,volg,surface_pressure,theta,u,uReconstructZonal,uReconstructMeridional"
+    var_list="pressure_p,rho,qv,qc,qr,qi,qs,qg,ni,nr,ng,nc,nifa,nwfa,volg,surface_pressure,theta,u,uReconstructZonal,uReconstructMeridional,refl10cm"
     for mem in $(seq -w 1 030); do
       ncks -A -H -v "${var_list}" "data/ana/mem${mem}.nc" "data/ens/mem${mem}.nc"
       export err=$?
@@ -135,3 +142,8 @@ else # move post mean to umbrella if solver
     mv "${DATA}"/data/ens/mem000.nc "${UMBRELLA_GETKF_DATA}"/post_mean.nc
   fi
 fi
+
+# Copy analysis files for debugging
+for i in $(seq -w 001 "${ENS_SIZE}"); do
+  cp -rL data/ens/mem${i}.nc ${COMOUT}/getkf_${TYPE}/${WGF}/mem${i}.nc
+done
