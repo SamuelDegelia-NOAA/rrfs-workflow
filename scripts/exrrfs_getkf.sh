@@ -104,46 +104,56 @@ if [[ "${TYPE}" == "solver" ]] && [[ "${GETKF_POST_OBSERVER:-FALSE}" == "TRUE" ]
   "${USHrrfs}"/yaml_getkf_postobserver getkf.yaml
 fi
 
-# run mpasjedi_enkf.x
-export OOPS_TRACE=1
-export OMP_NUM_THREADS=1
+if [[ ${start_type} == "warm" ]] || [[ ${start_type} == "cold" && ${COLDSTART_CYCS_DO_DA} == "true" ]]; then
 
-# Copy background files for debugging
-for i in $(seq -w 001 "${ENS_SIZE}"); do
-  cp -rL data/ens/mem${i}.nc ${COMOUT}/getkf_${TYPE}/${WGF}/mem${i}_bkg.nc
-done
+  # run mpasjedi_enkf.x
+  export OOPS_TRACE=1
+  export OMP_NUM_THREADS=1
 
-source prep_step
-${cpreq} "${EXECrrfs}"/mpasjedi_enkf.x .
-${MPI_RUN_CMD} ./mpasjedi_enkf.x getkf.yaml log.out
-# check the status
-export err=$?
-err_chk
-#
-cp "${DATA}"/getkf*.yaml "${COMOUT}/getkf_${TYPE}/${WGF}"
-cp "${DATA}"/log.* "${COMOUT}/getkf_${TYPE}/${WGF}"
-# move jdiag* files to the umbrella directory if observer
-if [[ "${TYPE}" == "observer" ]]; then
-  cp "${DATA}"/jdiag* "${COMOUT}/getkf_${TYPE}/${WGF}"
-  mv jdiag* "${UMBRELLA_GETKF_DATA}"/.
-else # move post mean to umbrella if solver
-  # ncks increments to cold_start IC
-  if [[ "${start_type}" == "cold" ]]; then
-    #var_list="pressure_p,rho,qv,qc,qr,qi,qs,qg,ni,nr,ng,nc,nifa,nwfa,volg,surface_pressure,theta,u,uReconstructZonal,uReconstructMeridional"
-    var_list="pressure_p,rho,qv,qc,qr,qi,qs,qg,ni,nr,ng,nc,nifa,nwfa,volg,surface_pressure,theta,u,uReconstructZonal,uReconstructMeridional,refl10cm"
-    for mem in $(seq -w 1 030); do
-      ncks -A -H -v "${var_list}" "data/ana/mem${mem}.nc" "data/ens/mem${mem}.nc"
-      export err=$?
-      err_chk
+  # Copy background files for debugging
+  if [[ "${TYPE}" == "solver" ]]; then
+    for i in $(seq -w 001 "${ENS_SIZE}"); do
+      cp -rL data/ens/mem${i}.nc ${COMOUT}/getkf_${TYPE}/${WGF}/mem${i}_bkg.nc
     done
-    rm -rf ../ana
-    mv data/ana ../
-  else
-    mv "${DATA}"/data/ens/mem000.nc "${UMBRELLA_GETKF_DATA}"/post_mean.nc
   fi
-fi
 
-# Copy analysis files for debugging
-for i in $(seq -w 001 "${ENS_SIZE}"); do
-  cp -rL data/ens/mem${i}.nc ${COMOUT}/getkf_${TYPE}/${WGF}/mem${i}.nc
-done
+  source prep_step
+  ${cpreq} "${EXECrrfs}"/mpasjedi_enkf.x .
+  ${MPI_RUN_CMD} ./mpasjedi_enkf.x getkf.yaml log.out
+  # check the status
+  export err=$?
+  err_chk
+  #
+  cp "${DATA}"/getkf*.yaml "${COMOUT}/getkf_${TYPE}/${WGF}"
+  cp "${DATA}"/log.* "${COMOUT}/getkf_${TYPE}/${WGF}"
+  # move jdiag* files to the umbrella directory if observer
+  if [[ "${TYPE}" == "observer" ]]; then
+    cp "${DATA}"/jdiag* "${COMOUT}/getkf_${TYPE}/${WGF}"
+    mv jdiag* "${UMBRELLA_GETKF_DATA}"/.
+  else # move post mean to umbrella if solver
+    # ncks increments to cold_start IC
+    if [[ "${start_type}" == "cold" ]]; then
+      #var_list="pressure_p,rho,qv,qc,qr,qi,qs,qg,ni,nr,ng,nc,nifa,nwfa,volg,surface_pressure,theta,u,uReconstructZonal,uReconstructMeridional"
+      var_list="pressure_p,rho,qv,qc,qr,qi,qs,qg,ni,nr,ng,nc,nifa,nwfa,volg,surface_pressure,theta,u,uReconstructZonal,uReconstructMeridional,refl10cm"
+      for mem in $(seq -w 1 030); do
+        ncks -A -H -v "${var_list}" "data/ana/mem${mem}.nc" "data/ens/mem${mem}.nc"
+        export err=$?
+        err_chk
+      done
+      rm -rf ../ana
+      mv data/ana ../
+    else
+      mv "${DATA}"/data/ens/mem000.nc "${UMBRELLA_GETKF_DATA}"/post_mean.nc
+    fi
+  fi
+
+  # Copy analysis files for debugging
+  if [[ "${TYPE}" == "solver" ]]; then
+    for i in $(seq -w 001 "${ENS_SIZE}"); do
+      cp -rL data/ens/mem${i}.nc ${COMOUT}/getkf_${TYPE}/${WGF}/mem${i}.nc
+    done
+    cp "${DATA}"/prior_mean.nc ${COMOUT}/getkf_${TYPE}/${WGF}/prior_mean.nc
+    cp "${UMBRELLA_GETKF_DATA}"/post_mean.nc ${COMOUT}/getkf_${TYPE}/${WGF}/post_mean.nc
+  fi
+
+fi

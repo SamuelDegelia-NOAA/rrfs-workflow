@@ -16,6 +16,7 @@ def getkf(xmlFile, expdir, taskType):
         'REFERENCE_TIME': '@Y-@m-@dT@H:00:00Z',
         'DO_RADAR_REF': os.getenv('DO_RADAR_REF', 'false'),
         'YAML_GEN_METHOD': os.getenv('YAML_GEN_METHOD', '1'),
+        'COLDSTART_CYCS_DO_DA': os.getenv('COLDSTART_CYCS_DO_DA', 'true'),
         'ENS_SIZE': os.getenv("ENS_SIZE", '5'),
         'TYPE': taskType.lower(),
     }
