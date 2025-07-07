@@ -136,7 +136,7 @@ if [[ ${start_type} == "warm" ]] || [[ ${start_type} == "cold" && ${COLDSTART_CY
   else # move post mean to umbrella if solver
     # ncks increments to cold_start IC
     if [[ "${start_type}" == "cold" ]]; then
-      var_list="pressure_p,rho,qv,qc,qr,qi,qs,qg,ni,nr,ng,nc,nifa,nwfa,volg,surface_pressure,theta,u,uReconstructZonal,uReconstructMeridional,refl10cm"
+      var_list="pressure_p,rho,qv,qc,qr,qi,qs,qg,ni,nr,ng,nc,nifa,nwfa,volg,surface_pressure,theta,u,uReconstructZonal,uReconstructMeridional,refl10cm,w"
       for mem in $(seq -w 1 030); do
         ncks -O -C -x -v ${var_list} "data/ens/mem${mem}.nc" "data/ens/tmp${mem}.nc"
         ncks -A -v ${var_list} "data/ana/mem${mem}.nc" "data/ens/tmp${mem}.nc"
