@@ -116,9 +116,6 @@ if [[ ${start_type} == "warm" ]] || [[ ${start_type} == "cold" && ${COLDSTART_CY
   #export OOPS_DEBUG=1
   export OMP_NUM_THREADS=1
 
-  # Save the background file for debugging
-  cp "${DATA}"/mpasin.nc "${COMOUT}/jedivar/${WGF}/mpasout.${timestr}_bkg.nc"
-
   source prep_step
   ${cpreq} "${EXECrrfs}"/mpasjedi_variational.x .
   ${MPI_RUN_CMD} ./mpasjedi_variational.x jedivar.yaml log.out
@@ -128,7 +125,6 @@ if [[ ${start_type} == "warm" ]] || [[ ${start_type} == "cold" && ${COLDSTART_CY
   #
   # ncks increments to cold_start IC
   if [[ ${start_type} == "cold" ]]; then
-    #var_list="pressure_p,rho,qv,qc,qr,qi,qs,qg,ni,nr,ng,nc,nifa,nwfa,volg,surface_pressure,theta,u,uReconstructZonal,uReconstructMeridional"
     var_list="pressure_p,rho,qv,qc,qr,qi,qs,qg,ni,nr,ng,nc,nifa,nwfa,volg,surface_pressure,theta,u,uReconstructZonal,uReconstructMeridional,refl10cm"
     ncks -O -C -x -v ${var_list} mpasin.nc tmp.nc
     ncks -A -v ${var_list} ana.nc tmp.nc
