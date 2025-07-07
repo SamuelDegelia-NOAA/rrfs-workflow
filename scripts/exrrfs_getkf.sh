@@ -99,23 +99,15 @@ case ${YAML_GEN_METHOD:-1} in
     ;;
 esac
 
-# If running posterior observer during the solver, edit the yaml
-if [[ "${TYPE}" == "solver" ]] && [[ "${GETKF_POST_OBSERVER:-FALSE}" == "TRUE" ]]; then
-  "${USHrrfs}"/yaml_getkf_postobserver getkf.yaml
+# For post task, change a few yaml settings and remove "reduce obs space"
+if [[ "${TYPE}" == "post" ]]; then
+  "${USHrrfs}"/yaml_getkf_post getkf.yaml
 fi
 
 if [[ ${start_type} == "warm" ]] || [[ ${start_type} == "cold" && ${COLDSTART_CYCS_DO_DA} == "true" ]]; then
-
   # run mpasjedi_enkf.x
   export OOPS_TRACE=1
   export OMP_NUM_THREADS=1
-
-  # Copy background files for debugging
-  if [[ "${TYPE}" == "solver" ]]; then
-    for i in $(seq -w 001 "${ENS_SIZE}"); do
-      cp -rL data/ens/mem${i}.nc ${COMOUT}/getkf_${TYPE}/${WGF}/mem${i}_bkg.nc
-    done
-  fi
 
   source prep_step
   ${cpreq} "${EXECrrfs}"/mpasjedi_enkf.x .
@@ -126,19 +118,32 @@ if [[ ${start_type} == "warm" ]] || [[ ${start_type} == "cold" && ${COLDSTART_CY
   #
   cp "${DATA}"/getkf*.yaml "${COMOUT}/getkf_${TYPE}/${WGF}"
   cp "${DATA}"/log.* "${COMOUT}/getkf_${TYPE}/${WGF}"
+
+  # rename ombg to oman for posterior observer jdiag files
+  if [[ "${TYPE}" == "post" ]]; then
+    for jdiag in "${DATA}"/jdiag*; do
+      jdiag_tmp="${jdiag%.nc}_tmp.nc"
+      nccopy -k 3 "${jdiag}" "${jdiag_tmp}"
+      ncrename -g ombg,oman "${jdiag_tmp}"
+      mv "${jdiag_tmp}" "${jdiag}"
+    done
+  fi
+
   # move jdiag* files to the umbrella directory if observer
-  if [[ "${TYPE}" == "observer" ]]; then
+  if [[ "${TYPE}" == "observer" || "${TYPE}" == "post" ]]; then
     cp "${DATA}"/jdiag* "${COMOUT}/getkf_${TYPE}/${WGF}"
     mv jdiag* "${UMBRELLA_GETKF_DATA}"/.
   else # move post mean to umbrella if solver
     # ncks increments to cold_start IC
     if [[ "${start_type}" == "cold" ]]; then
-      #var_list="pressure_p,rho,qv,qc,qr,qi,qs,qg,ni,nr,ng,nc,nifa,nwfa,volg,surface_pressure,theta,u,uReconstructZonal,uReconstructMeridional"
       var_list="pressure_p,rho,qv,qc,qr,qi,qs,qg,ni,nr,ng,nc,nifa,nwfa,volg,surface_pressure,theta,u,uReconstructZonal,uReconstructMeridional,refl10cm"
       for mem in $(seq -w 1 030); do
-        ncks -A -H -v "${var_list}" "data/ana/mem${mem}.nc" "data/ens/mem${mem}.nc"
+        ncks -O -C -x -v ${var_list} "data/ens/mem${mem}.nc" "data/ens/tmp${mem}.nc"
+        ncks -A -v ${var_list} "data/ana/mem${mem}.nc" "data/ens/tmp${mem}.nc"
         export err=$?
         err_chk
+        dest=$(readlink -f "data/ens/mem${mem}.nc")
+        mv "data/ens/tmp${mem}.nc" "${dest}"
       done
       rm -rf ../ana
       mv data/ana ../
@@ -147,13 +152,6 @@ if [[ ${start_type} == "warm" ]] || [[ ${start_type} == "cold" && ${COLDSTART_CY
     fi
   fi
 
-  # Copy analysis files for debugging
-  if [[ "${TYPE}" == "solver" ]]; then
-    for i in $(seq -w 001 "${ENS_SIZE}"); do
-      cp -rL data/ens/mem${i}.nc ${COMOUT}/getkf_${TYPE}/${WGF}/mem${i}.nc
-    done
-    cp "${DATA}"/prior_mean.nc ${COMOUT}/getkf_${TYPE}/${WGF}/prior_mean.nc
-    cp "${UMBRELLA_GETKF_DATA}"/post_mean.nc ${COMOUT}/getkf_${TYPE}/${WGF}/post_mean.nc
-  fi
-
+else
+  echo "INFO: No DA at the cold start cycle"
 fi
