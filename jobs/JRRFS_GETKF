@@ -52,8 +52,20 @@ fi
 #----------------------------------------
 # Remove the Temporary working directory
 #----------------------------------------
-[[ "${KEEPDATA}" == "NO" ]] && rm -rf "${DATA}"
-#
+if [[ "${KEEPDATA}" == "NO" ]]; then
+  rm -rf "${DATA}"
+  if [[ "${TYPE}" == "post" ]]; then
+    # Check that fcst/save_fcst is also done using COMOUT as a proxy
+    while true; do
+      FCST_DONE_COUNT=$(ls -1 ${COMOUT}/fcst/${WGF}/mem*/log.atmosphere.0000.out 2>/dev/null | wc -l)
+      if [[ "${FCST_DONE_COUNT}" -eq "${ENS_SIZE}" ]]; then
+        break
+      fi
+      sleep 30s
+    done
+    rm -rf "${UMBRELLA_PREP_IC_DATA}"
+  fi
+fi
 date
 echo "JOB ${jobid:-} HAS COMPLETED NORMALLY!"
 exit 0
