@@ -251,6 +251,7 @@ settings="\
   'nnodes_run_gsidiag': ${NNODES_RUN_GSIDIAG}
   'nnodes_run_postanal': ${NNODES_RUN_POSTANAL}
   'nnodes_run_enkf': ${NNODES_RUN_ENKF}
+  'nnodes_run_enkf_jedi': ${NNODES_RUN_ENKF_JEDI}
   'nnodes_run_recenter': ${NNODES_RUN_RECENTER}
   'nnodes_run_post': ${NNODES_RUN_POST}
   'nnodes_run_prdgen': ${NNODES_RUN_PRDGEN}
@@ -298,6 +299,7 @@ settings="\
   'ppn_run_gsidiag': ${PPN_RUN_GSIDIAG}
   'ppn_run_postanal': ${PPN_RUN_POSTANAL}
   'ppn_run_enkf': ${PPN_RUN_ENKF}
+  'ppn_run_enkf_jedi': ${PPN_RUN_ENKF_JEDI}
   'ppn_run_recenter': ${PPN_RUN_RECENTER}
   'ppn_run_post': ${PPN_RUN_POST}
   'ppn_run_prdgen': ${PPN_RUN_PRDGEN}
@@ -322,6 +324,7 @@ settings="\
   'tpp_run_analysis': ${TPP_RUN_ANALYSIS}
   'tpp_run_analysis_jedi': ${TPP_RUN_ANALYSIS_JEDI}
   'tpp_run_enkf': ${TPP_RUN_ENKF}
+  'tpp_run_enkf_jedi': ${TPP_RUN_ENKF_JEDI}
   'tpp_run_fcst': ${TPP_RUN_FCST}
   'tpp_run_post': ${TPP_RUN_POST}
   'tpp_run_bufrsnd': ${TPP_RUN_BUFRSND}
@@ -346,6 +349,7 @@ settings="\
   'wtime_run_gsidiag': ${WTIME_RUN_GSIDIAG}
   'wtime_run_postanal': ${WTIME_RUN_POSTANAL}
   'wtime_run_enkf': ${WTIME_RUN_ENKF}
+  'wtime_run_enkf_jedi': ${WTIME_RUN_ENKF_JEDI}
   'wtime_run_recenter': ${WTIME_RUN_RECENTER}
   'wtime_run_post': ${WTIME_RUN_POST}
   'wtime_run_enspost': ${WTIME_RUN_ENSPOST}
@@ -412,6 +416,7 @@ settings="\
   'maxtries_analysis_gsi': ${MAXTRIES_ANALYSIS_GSI}
   'maxtries_postanal': ${MAXTRIES_POSTANAL}
   'maxtries_analysis_enkf': ${MAXTRIES_ANALYSIS_ENKF}
+  'maxtries_analysis_enkf_jedi': ${MAXTRIES_ANALYSIS_ENKF_JEDI}
   'maxtries_recenter': ${MAXTRIES_RECENTER}
   'maxtries_run_post': ${MAXTRIES_RUN_POST}
   'maxtries_run_prdgen': ${MAXTRIES_RUN_PRDGEN}
@@ -532,6 +537,7 @@ settings="\
   'do_enscontrol': ${DO_ENSCONTROL}
   'do_gsiobserver': ${DO_GSIOBSERVER}
   'do_enkfupdate': ${DO_ENKFUPDATE}
+  'do_enkfupdate_jedi': ${DO_ENKFUPDATE_JEDI}
   'do_enkf_radar_ref': ${DO_ENKF_RADAR_REF}
   'do_envar_radar_ref': ${DO_ENVAR_RADAR_REF}
   'do_envar_radar_ref_once': ${DO_ENVAR_RADAR_REF_ONCE}
