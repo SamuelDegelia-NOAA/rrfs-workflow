@@ -110,6 +110,7 @@ esac
 #
 START_DATE=$(echo "${CDATE}" | sed 's/\([[:digit:]]\{2\}\)$/ \1/')
 YYYYMMDDHH=$(date +%Y%m%d%H -d "${START_DATE}")
+YYYYMMDDHHm1=$(date +%Y%m%d%H -d "${START_DATE} 1 hour ago")
 JJJ=$(date +%j -d "${START_DATE}")
 
 YYYY=${YYYYMMDDHH:0:4}
@@ -243,6 +244,8 @@ cp -p ${FIX_JEDI}/ioda_empty.nc ioda_adpupa.nc
 ./bufr2ioda_adpupa_prepbufr.py -c bufr2ioda_adpupa_prepbufr_0.json >> $pgmout
 
 # SATWND
+cp -p ${FIX_JEDI}/ioda_empty_satwnd.nc ioda_satwnd.abi_goes-16.nc
+cp -p ${FIX_JEDI}/ioda_empty_satwnd.nc ioda_satwnd.abi_goes-18.nc
 ./gen_bufr2ioda_json.py -t bufr2ioda_satwnd_amv_goes.json -o bufr2ioda_satwnd_amv_goes_0.json
 ./bufr2ioda_satwnd_amv_goes.py -c bufr2ioda_satwnd_amv_goes_0.json >> $pgmout
 
@@ -276,13 +279,33 @@ fi
 #
 #-----------------------------------------------------------------------
 #
+is_empty_ioda() {
+    local f="$1"
+    # Robust check: look at Location dimension
+    local loc
+    loc=$(ncdump -h "$f" 2>/dev/null | awk '/Location =/ {print $3}' | tr -d ';')
+    if [ -z "$loc" ]; then
+        return 0
+    fi
+    if [ "$loc" -le 1 ]; then
+        return 0  # empty
+    fi
+    return 1  # not empty
+}
+
 cp "${RDASAPP_DIR}"/rrfs-test/IODA/offline_domain_check.py .
 cp "${RDASAPP_DIR}"/rrfs-test/IODA/offline_domain_check_satrad.py .
 cp "${RDASAPP_DIR}"/rrfs-test/IODA/offline_ioda_patch.py .
 cp "${RDASAPP_DIR}"/rrfs-test/IODA/offline_vad_thinning.py .
+cp "${RDASAPP_DIR}"/rrfs-test/IODA/offline_duplicate_tagger.py .
 
 # offline domain check & patch
-for ioda_file in ioda*nc; do
+for ioda_file in ioda*.nc; do
+  # skip empty files
+  if is_empty_ioda "$ioda_file"; then
+    echo "Skipping domain check & patch: $ioda_file is empty"
+    continue
+  fi
   grid_file="${FIX_GSI}/${PREDEF_GRID_NAME}/fv3_grid_spec"
   if [[ "${ioda_file}" == *abi* && "${ioda_file}" != *satwnd* ]]; then
     echo " ${ioda_file} ioda file detected: running offline_domain_check_satrad.py"
@@ -312,6 +335,20 @@ export pgm="offline_vad_thinning.py"
 ./offline_vad_thinning.py -i ioda_vadwnd.nc -o ioda_vadwnd_thinned.nc >> $pgmout
 export err=$?; err_chk
 mv ioda_vadwnd_thinned.nc ioda_vadwnd.nc
+
+# offline duplicate tagger (cycle-to-cycle duplicates) (0=new; 1=duplicate)
+obs_types=(adpupa adpsfc aircar aircft msonet vadwnd sfcshp rassda proflr)
+for obs in "${obs_types[@]}"; do
+  tm01_ioda="${CYCLE_BASEDIR}/${YYYYMMDDHHm1}/ioda_bufr/ioda_${obs}.nc"
+  if [[ -f $tm01_ioda ]]; then
+    tm00_ioda="./ioda_${obs}.nc"
+    tm00_ioda_out="ioda_${obs}_tagged.nc"
+    export pgm="offline_duplicate_tagger.py"
+    python offline_duplicate_tagger.py tag $tm00_ioda -p $tm01_ioda -o $tm00_ioda_out >> $pgmout
+    export err=$?; err_chk
+    mv $tm00_ioda_out $tm00_ioda
+  fi
+done
 #
 #-----------------------------------------------------------------------
 #
@@ -320,6 +357,17 @@ mv ioda_vadwnd_thinned.nc ioda_vadwnd.nc
 #-----------------------------------------------------------------------
 #
 cp ioda_*.nc $COMOUT/.
+#
+#-----------------------------------------------------------------------
+#
+# Create empty file to note completion of task. This informs the next
+# ioda_bufr task in the subsequent cycle that it may run. This is
+# necessary for cycle-to-cycle duplicate tagging since each ioda_bufr
+# task now depends on the completion of the previous.
+#
+#-----------------------------------------------------------------------
+#
+touch "${ioda_bufr_nwges_dir}"/ioda_bufr_complete
 #
 #-----------------------------------------------------------------------
 #
