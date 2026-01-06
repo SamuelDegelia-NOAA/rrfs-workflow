@@ -1,19 +1,25 @@
 
-# Path settings
-EXPT_BASEDIR="/lfs/h2/emc/da/noscrub/samuel.degelia/rrfs-workflow_enkf/rrfs-workflow/expt_dirs/May2024_retro_enkf/$version" # experiment will run in here
-EXPT_SUBDIR="rrfs_conus_13km.20251104.mgbf" # experiment name. the scripts and config files for the experiment will be kept in here
-STMP="${EXPT_BASEDIR}"
-PTMP="${EXPT_BASEDIR}"
-NWGES="${EXPT_BASEDIR}/nwges"
-
+# Machine options
 MACHINE="wcoss2"
 MACHINETYPE="backup"
-version="v0.8.6"
+version="v1.2.0"
 ACCOUNT="RRFS-DEV"
+
+# Directory settings (user-dependent)
+EXPT_BASEDIR="/lfs/h2/emc/da/noscrub/$USER/rrfs-workflow_enkf/rrfs-workflow/expt_dirs/May2024_retro_enkf/$version"
+EXPT_SUBDIR="rrfs_conus_13km.enkf"
+STMP="/lfs/h2/emc/stmp/$USER/May2024_retro/$version/$EXPT_SUBDIR"
+PTMP="/lfs/h2/emc/ptmp/$USER/May2024_retro/$version/$EXPT_SUBDIR"
+NWGES="/lfs/h2/emc/ptmp/$USER/May2024_retro/$version/$EXPT_SUBDIR"
+ARCHIVEDIR="/NCEPDEV/emc-meso/5year/Samuel.Degelia/RRFSv1/May2024_retro/$version/$EXPT_SUBDIR/"
+DO_ARCHIVE_RETRO="TRUE"
+
 PREDEF_GRID_NAME=RRFS_CONUS_13km
 
 . set_rrfs_config_general.sh
+. set_rrfs_config_singlescaleloc.sh
 
+ACCOUNT=RRFS-DEV
 HPSS_ACCOUNT="RRFS-DEV"
 QUEUE_DEFAULT="dev"
 QUEUE_HPSS="dev_transfer"
@@ -23,14 +29,34 @@ QUEUE_PRDGEN="dev"
 QUEUE_ANALYSIS="dev"
 QUEUE_GRAPHICS="dev"
 
-DO_ENSEMBLE="TRUE"
-DO_ENSFCST="FALSE"
-DO_ENS_BLENDING="FALSE"
+# JEDI and GSI EnKF options
 DO_IODA_BUFR="TRUE"
 DO_JEDIVAR="FALSE"
 DA_SYSTEM="JEDI"
 DO_DACOLD="FALSE"
 DO_DACYCLE="FALSE"
+DO_ENSEMBLE="TRUE"
+DO_ENSFCST="FALSE"
+if [[ ${DO_ENSEMBLE}  == "TRUE" ]]; then
+   DO_GSIOBSERVER="TRUE"
+   DO_ENKFUPDATE="TRUE"
+   DO_RECENTER="FALSE"
+   DO_ENS_GRAPHICS="FALSE"
+   DO_ENKF_RADAR_REF="FALSE"
+   DO_ENSPOST="FALSE"
+   DO_ENSINIT="TRUE"
+fi
+
+# Radar DA options
+DO_IODA_MRMS="FALSE"
+DO_ENVAR_RADAR_REF="FALSE"
+DO_ENVAR_RADAR_REF_ONCE="TRUE"
+RADARREFL_TIMELEVEL=(0)
+FH_DFI_RADAR="0.0,0.25,0.5"
+diag_radardbz=.true.
+
+# Other options
+grid_ratio_fv3=1.0 # default: 2.0
 DO_SURFACE_CYCLE="FALSE"
 DO_SPINUP="FALSE"
 DO_SAVE_INPUT="TRUE"
@@ -38,13 +64,10 @@ DO_POST_SPINUP="FALSE"
 DO_POST_PROD="FALSE"
 DO_RETRO="TRUE"
 DO_NONVAR_CLDANAL="FALSE"
-DO_ENVAR_RADAR_REF="FALSE"
 DO_SMOKE_DUST="FALSE"
 EBB_DCYCLE="2"
 DO_PM_DA="FALSE"
 DO_REFL2TTEN="FALSE"
-RADARREFL_TIMELEVEL=(0)
-FH_DFI_RADAR="0.0,0.25,0.5"
 DO_SOIL_ADJUST="FALSE"
 DO_RADDA="FALSE"          # radiance
 DO_BUFRSND="FALSE"
@@ -57,16 +80,6 @@ DO_UPDATE_BC="FALSE"
 DO_GLM_FED_DA="FALSE"
 GLMFED_DATA_MODE="FULL"  # retros 20220608-now use FULL; retros 20230714-now and real-time on Jet use FULL or TILES
 
-if [[ ${DO_ENSEMBLE}  == "TRUE" ]]; then
-   DO_GSIOBSERVER="TRUE"
-   DO_ENKFUPDATE="TRUE"
-   DO_RECENTER="FALSE"
-   DO_ENS_GRAPHICS="FALSE"
-   DO_ENKF_RADAR_REF="FALSE"
-   DO_ENSPOST="FALSE"
-   DO_ENSINIT="TRUE"
-fi
-
 EXTRN_MDL_ICS_OFFSET_HRS="6"
 LBC_SPEC_INTVL_HRS="1"
 EXTRN_MDL_LBCS_OFFSET_HRS="6"
@@ -78,7 +91,7 @@ DATE_FIRST_CYCL="20240506"
 DATE_LAST_CYCL="20240512"
 CYCL_HRS=( "00" "12" )
 #CYCL_HRS_SPINSTART=("03" "15")
-CYCL_HRS_SPINSTART=("00" "12")
+CYCL_HRS_SPINSTART=("00" "12") # new SKD
 CYCL_HRS_PRODSTART=("00" "12")
 CYCLEMONTH="5"
 CYCLEDAY="6-12"
@@ -160,7 +173,6 @@ envir="test"
 NET="rrfs"
 TAG="c13"
 
-ARCHIVEDIR="/1year/BMC/wrfruc/rrfs_dev1"
 NCL_REGION="conus"
 MODEL="rrfs"
 RUN="rrfs"
@@ -177,5 +189,4 @@ RRFSE_NWGES="/lfs/h3/emc/lam/noscrub/hui.liu/runs_co13km/rrfs.v0.8.6/nwges_enkf"
   #NUM_ENS_MEMBERS=30     # FV3LAM ensemble size for GSI hybrid analysis
   NUM_ENS_MEMBERS=5     # TODO: CHANGE ME BACK
   CYCL_HRS_PRODSTART_ENS=( "07" "19" )
-  DO_ENVAR_RADAR_REF="FALSE"
 fi
