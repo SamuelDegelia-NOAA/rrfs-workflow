@@ -517,6 +517,7 @@ optionList[33]=PREP_MODEL_FOR_FED
 optionList[34]=DA_SYSTEM
 optionList[35]=DO_DACOLD
 optionList[36]=DO_ARCHIVE_RETRO
+optionList[37]=DO_ENKF_ONLY
 
 obs_number=${#optionList[@]}
 for (( i=0; i<${obs_number}; i++ ));

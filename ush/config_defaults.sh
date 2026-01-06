@@ -2183,6 +2183,9 @@ TILE_SETS="full"
 # Decide whether or not to run Radar Reflectivity EnKF update for the 
 # ensemble members
 #
+# DO_ENKF_ONLY:
+# Setting to tell wflow to only do the EnKF analysis if do_dacycle is set
+#
 # DO_ENVAR_RADAR_REF:
 # Decide whether or not to run Radar Reflectivity hybrid analysis
 #
@@ -2270,6 +2273,7 @@ DO_ENSCONTROL="FALSE"
 DO_GSIOBSERVER="FALSE"
 DO_ENKFUPDATE="FALSE"
 DO_ENKFUPDATE_JEDI="FALSE"
+DO_ENKF_ONLY="FALSE"
 DO_ENKF_RADAR_REF="FALSE"
 DO_ENVAR_RADAR_REF="FALSE"
 DO_ENVAR_RADAR_REF_ONCE="FALSE"
