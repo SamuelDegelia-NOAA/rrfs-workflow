@@ -46,6 +46,7 @@ if [[ ${DO_ENSEMBLE}  == "TRUE" ]]; then
    DO_ENSPOST="FALSE"
    DO_ENSINIT="TRUE"
 fi
+CONVINFO_FN="convinfo.rrfs_only_133_233"
 
 # Radar DA options
 DO_IODA_MRMS="FALSE"
