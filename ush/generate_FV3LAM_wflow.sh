@@ -591,8 +591,6 @@ settings="\
 #
   'do_jedivar': ${DO_JEDIVAR}
 #
-# JEDI EnKF related parameters
-  'do_enkf_only': ${DO_ENKF_ONLY}
 # archive retro related parameters
 #
   'do_archive_retro': ${DO_ARCHIVE_RETRO}
