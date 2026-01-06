@@ -153,6 +153,32 @@ esac
 export KMP_AFFINITY=scatter
 export OMP_NUM_THREADS=${OMP_NUM_THREADS:-1}
 export OMP_STACKSIZE=${OMP_STACKSIZE:-1024m}
+
+#
+#-----------------------------------------------------------------------
+#
+# For JEDI/GSI parallel runs, copy INPUT.{type} into INPUT
+# This is only performed here for the EnKF
+# The POSTANAL_TN task performs the copying for Var DA (not used in EnKF)
+#
+#-----------------------------------------------------------------------
+#
+
+if [[ ${ensmem_indx} -ge 1 ]]; then
+  echo "DA_SYSTEM: $DA_SYSTEM"
+  bkpath=${run_dir}/INPUT
+  case "$DA_SYSTEM" in
+    GSI)
+      rm -rf $bkpath
+      cp -r $bkpath.gsi $bkpath
+      ;;
+    JEDI)
+      rm -rf $bkpath
+      cp -r $bkpath.jedi $bkpath
+      ;;
+  esac
+fi
+
 #
 #-----------------------------------------------------------------------
 #
