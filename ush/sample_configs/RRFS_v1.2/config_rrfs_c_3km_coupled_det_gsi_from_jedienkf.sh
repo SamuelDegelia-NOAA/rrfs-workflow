@@ -6,13 +6,13 @@ version="v1.2.0"
 ACCOUNT="RRFS-DEV"
 
 # Directory settings (user-dependent)
-EXPT_BASEDIR="/lfs/h2/emc/da/noscrub/$USER/rrfs-workflow_conus3km/rrfs-workflow/expt_dirs/May2024_retro_enkf/$version"
-EXPT_SUBDIR="rrfs_conus_3km.enkf_jedi"
+EXPT_BASEDIR="/lfs/h2/emc/da/noscrub/$USER/rrfs-workflow_conus3km/rrfs-workflow/expt_dirs/May2024_retro_coupled_det_fromjedi/$version"
+EXPT_SUBDIR="rrfs_conus_3km.coupled_det_fromjedi"
 STMP="/lfs/h2/emc/stmp/$USER/May2024_retro/$version/$EXPT_SUBDIR"
 PTMP="/lfs/h2/emc/ptmp/$USER/May2024_retro/$version/$EXPT_SUBDIR"
 NWGES="/lfs/h2/emc/ptmp/$USER/May2024_retro/$version/$EXPT_SUBDIR"
 ARCHIVEDIR="/NCEPDEV/emc-meso/5year/Samuel.Degelia/RRFSv1/May2024_retro/$version/$EXPT_SUBDIR/"
-DO_ARCHIVE_RETRO="TRUE"
+DO_ARCHIVE_RETRO="FALSE"
 
 PREDEF_GRID_NAME=RRFS_CONUS_3km
 
@@ -34,19 +34,19 @@ PPN_RUN_ENKF_JEDI=40
 
 # JEDI and GSI EnKF options
 DO_IODA_BUFR="TRUE"
-DO_JEDIVAR="FALSE"
-DA_SYSTEM="JEDI"
+DO_JEDIVAR="TRUE"
+DA_SYSTEM="GSI"
 DO_PARALLEL_DA="FALSE"
 DO_DACOLD="FALSE"
-DO_DACYCLE="FALSE"
-DO_ENSEMBLE="TRUE"
+DO_DACYCLE="TRUE"
+DO_ENSEMBLE="FALSE"
 DO_ENSFCST="FALSE"
 if [[ ${DO_ENSEMBLE}  == "TRUE" ]]; then
    DO_GSIOBSERVER="TRUE"
    DO_ENKFUPDATE="TRUE"
    DO_RECENTER="FALSE"
    DO_ENS_GRAPHICS="FALSE"
-   DO_ENKF_RADAR_REF="TRUE"
+   DO_ENKF_RADAR_REF="FALSE"
    DO_ENSPOST="FALSE"
    DO_ENSINIT="TRUE"
 fi
@@ -56,7 +56,7 @@ JCB_CONFIG_ENKF_SOLVER="rdas-atmosphere-templates-fv3_c3km_dbz_getkf_solver.yaml
 CONVINFO_FN="convinfo.rrfs_120_133_dbz"
 
 # Radar DA options
-DO_IODA_MRMS="TRUE"
+DO_IODA_MRMS="FALSE"
 DO_ENVAR_RADAR_REF="FALSE"
 DO_ENVAR_RADAR_REF_ONCE="TRUE"
 RADARREFL_TIMELEVEL=(0)
@@ -70,7 +70,7 @@ DO_SURFACE_CYCLE="FALSE"
 DO_SPINUP="FALSE"
 DO_SAVE_INPUT="TRUE"
 DO_POST_SPINUP="FALSE"
-DO_POST_PROD="FALSE"
+DO_POST_PROD="TRUE"
 DO_RETRO="TRUE"
 DO_NONVAR_CLDANAL="FALSE"
 DO_SMOKE_DUST="FALSE"
@@ -165,18 +165,17 @@ WRTCMP_ideflate="1"
 WRTCMP_quantize_nsd="18"
 
 regional_ensemble_option=1      # 1 use GDAS ensemble
-#  regional_ensemble_option=5   # 5 use RRFS ensemble from enkf
 if [[ ${USE_RRFSE_ENS} == "TRUE" ]]; then
   regional_ensemble_option=5    # 5 for RRFS ensemble
 fi
 
 # -------- GEFS, FV3GFS, GDASENKF, etc ---------
-EXTRN_MDL_NAME_ICS="GEFS"
-EXTRN_MDL_NAME_LBCS="GEFS"
+EXTRN_MDL_NAME_ICS="FV3GFS"
+EXTRN_MDL_NAME_LBCS="FV3GFS"
 FV3GFS_FILE_FMT_ICS="grib2"
 FV3GFS_FILE_FMT_LBCS="grib2"
 EXTRN_MDL_DATE_JULIAN="TRUE"
-EXTRN_MDL_SAVETYPE="GSL"
+
 envir="test"
 
 NET="rrfs"
@@ -192,7 +191,7 @@ RUN="rrfs"
 if [[ ${regional_ensemble_option} == "5" ]]; then
 #-------------------------------------------------
 # RRFSE directory contains ensemble restart files for GSI hybrid.
-RRFSE_NWGES="/lfs/h2/emc/ptmp/$USER/May2024_retro/$version/$EXPT_SUBDIR"
+RRFSE_NWGES="/lfs/h2/emc/ptmp/$USER/May2024_retro/$version/rrfs_conus_3km.enkf_jedi"
 CYCL_HRS_PRODSTART_ENS=( "07" "19" )
 fi
 

@@ -7,12 +7,12 @@ ACCOUNT="RRFS-DEV"
 
 # Directory settings (user-dependent)
 EXPT_BASEDIR="/lfs/h2/emc/da/noscrub/$USER/rrfs-workflow_conus3km/rrfs-workflow/expt_dirs/May2024_retro_enkf/$version"
-EXPT_SUBDIR="rrfs_conus_3km.enkf_jedi"
+EXPT_SUBDIR="rrfs_conus_3km.enkf_gsi"
 STMP="/lfs/h2/emc/stmp/$USER/May2024_retro/$version/$EXPT_SUBDIR"
 PTMP="/lfs/h2/emc/ptmp/$USER/May2024_retro/$version/$EXPT_SUBDIR"
 NWGES="/lfs/h2/emc/ptmp/$USER/May2024_retro/$version/$EXPT_SUBDIR"
 ARCHIVEDIR="/NCEPDEV/emc-meso/5year/Samuel.Degelia/RRFSv1/May2024_retro/$version/$EXPT_SUBDIR/"
-DO_ARCHIVE_RETRO="TRUE"
+DO_ARCHIVE_RETRO="FALSE"
 
 PREDEF_GRID_NAME=RRFS_CONUS_3km
 
@@ -35,7 +35,7 @@ PPN_RUN_ENKF_JEDI=40
 # JEDI and GSI EnKF options
 DO_IODA_BUFR="TRUE"
 DO_JEDIVAR="FALSE"
-DA_SYSTEM="JEDI"
+DA_SYSTEM="GSI"
 DO_PARALLEL_DA="FALSE"
 DO_DACOLD="FALSE"
 DO_DACYCLE="FALSE"
