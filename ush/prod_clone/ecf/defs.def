@@ -1,16 +1,17 @@
 suite prod_clone
   # Explicitly define the home and output directories to fix the pathing error
-  edit ECF_HOME "/lfs/h2/emc/lam/noscrub/emc.lam/ecflow/submit"
-  edit ECF_OUT  "/lfs/h2/emc/lam/noscrub/emc.lam/ecflow/output"
-  edit OUTPUTDIR "/lfs/f2/t2o/ptmp/emc/para/output/prod_clone"
+  edit ECF_HOME "/lfs/h2/emc/da/noscrub/samuel.degelia/ecflow/submit"
+  edit ECF_OUT "/lfs/h2/emc/da/noscrub/samuel.degelia/ecflow/output"
+  edit OUTPUTDIR "/lfs/h2/emc/da/noscrub/samuel.degelia/ecflow/output/prod_clone"
+
   edit ENVIR 'prod'
   edit MACHINE_SITE 'production'
   
   # Base directory for your package
-  edit PACKAGEHOME "/lfs/h2/emc/lam/noscrub/emc.lam/rrfs/prod_clone.v0.0.2"
+  edit PACKAGEHOME "/lfs/h2/emc/da/noscrub/samuel.degelia/rrfs-workflow_ecflow/rrfs-workflow/ush/prod_clone"
   
   # Use the absolute path for ECF_FILES to avoid expansion issues
-  edit ECF_FILES "/lfs/h2/emc/lam/noscrub/emc.lam/rrfs/prod_clone.v0.0.2/ecf"
+  edit ECF_FILES "/lfs/h2/emc/da/noscrub/samuel.degelia/rrfs-workflow_ecflow/rrfs-workflow/ush/prod_clone/ecf"
 
   task jupdateprodclonestatuses
     defstatus complete

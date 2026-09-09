@@ -2,8 +2,8 @@ import ecflow
 import os
 
 # Server connection details
-HOST = "ddecflow02"
-PORT = 32035
+HOST = "ddecflow01"
+PORT = 34617
 
 # Mapping: Primary Folder -> List of Cycles to check within that folder
 primary_to_cycles = {

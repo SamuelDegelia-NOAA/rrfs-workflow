@@ -8,7 +8,7 @@ import ecflow
 PRODCLONEPREFIX = os.getenv("PRODCLONEPREFIX")
 assert PRODCLONEPREFIX, "$PRODCLONEPREFIX not defined!"
 
-assert os.getenv("ECF_PORT")=="32035", "ECF_PORT is not 31419. Quitting!"
+assert os.getenv("ECF_PORT")=="34617", "ECF_PORT is not 31617. Quitting!"
 assert os.getenv("ECF_HOST") is not None, "ECF_HOST is not set. Quitting!"
 assert len(sys.argv)==3, "%s takes two and only two arguments. Quitting!"%os.path.basename(sys.argv[0])
 

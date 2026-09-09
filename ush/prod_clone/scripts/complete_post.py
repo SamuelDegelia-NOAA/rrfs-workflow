@@ -2,8 +2,8 @@ import ecflow
 import os
 
 # Server connection details
-HOST = "ddecflow02"
-PORT = 32035
+HOST = "ddecflow01"
+PORT = 34617
 
 # Configuration
 PRIMARY_START_HOURS = [0, 6, 12, 18]

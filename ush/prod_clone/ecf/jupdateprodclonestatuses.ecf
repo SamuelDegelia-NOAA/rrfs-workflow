@@ -49,10 +49,14 @@ python $HOMEprod_clone/scripts/complete_post.py
 
 export err=$?
 
+#if [ $err -eq 0 -a $KEEPDATA != YES ]; then
+#  mkdir -p /lfs/f2/t2o/ptmp/emc/ptmp/emc.lam/$envir/tmp
+#  cd /lfs/f2/t2o/ptmp/emc/ptmp/emc.lam/$envir/tmp
+#  rm -rf $jobid
+#fi
 if [ $err -eq 0 -a $KEEPDATA != YES ]; then
-  mkdir -p /lfs/f2/t2o/ptmp/emc/ptmp/emc.lam/$envir/tmp
-  cd /lfs/f2/t2o/ptmp/emc/ptmp/emc.lam/$envir/tmp
-  rm -rf $jobid
+  cd /
+  rm -rf $DATA
 fi
 
 %include <tail.h>

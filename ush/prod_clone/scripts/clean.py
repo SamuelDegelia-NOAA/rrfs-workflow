@@ -4,8 +4,8 @@ import ecflow
 import datetime
 import os
 
-HOST = "ddecflow02"
-PORT = 32035
+HOST = "ddecflow01"
+PORT = 34617
 RRFS_DIR = "/lfs/f2/t2o/ptmp/emc/para/stmp"
 
 # Mapping Parent Family to (Target Child Task, Cleanup Hour Range)

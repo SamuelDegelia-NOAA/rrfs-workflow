@@ -2,8 +2,8 @@ import ecflow
 import os
 
 # Connection details for WCOSS2
-HOST = "ddecflow02"
-PORT = 32035
+HOST = "ddecflow01"
+PORT = 34617
 
 # List of major primary cycles to check
 MAJOR_CYCLES = ["00", "06", "12", "18"]

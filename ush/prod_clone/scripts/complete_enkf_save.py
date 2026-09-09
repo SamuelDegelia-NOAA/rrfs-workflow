@@ -2,8 +2,8 @@ import ecflow
 import os
 
 # Updated connection details for WCOSS2
-HOST = "ddecflow02"
-PORT = 32035
+HOST = "ddecflow01"
+PORT = 34617
 # Your specific suite path
 FAMILY_PATH = "/para/primary/00/rrfs/v1.0/00z/enkf/forecast"
 
