@@ -18,6 +18,7 @@ suite prod_clone
     cron 00:00 23:59 00:01
 
   family primary
+    defstatus suspended
     family 00
       family gfs
         family v16.3
