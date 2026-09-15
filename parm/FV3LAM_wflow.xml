@@ -263,6 +263,7 @@ define resources used for each tasks
 <!ENTITY RESOURCES_FCST_SPINUP  "<nodes>{{ nnodes_run_fcst }}:ppn={{ ppn_run_fcst }}:tpp={{ tpp_run_fcst }}</nodes>">
 <!ENTITY RESOURCES_FCST_PROD    "<nodes>{{ nnodes_run_fcst }}:ppn={{ ppn_run_fcst }}:tpp={{ tpp_run_fcst }}</nodes>">
 <!ENTITY NODESIZE_ALL    "<nodesize>{{ ncores_per_node }}</nodesize>">
+<!ENTITY RESOURCES_ARCHIVE_RETRO "<nodes>{{ nnodes_run_archive_retro }}:ppn={{ ppn_run_archive_retro }}:tpp={{ tpp_run_archive_retro }}</nodes>">
 <!-- Ursa hands out memory per allocated core, so the big MPI tasks take whole nodes -->
 <!ENTITY NATIVE_ALL          "<native>--export=NONE</native>">
 <!ENTITY NATIVE_ANALYSIS_JEDI "<native>--export=NONE --exclusive</native>">
@@ -4335,7 +4336,7 @@ MODULES_RUN_TASK_FP script.
 {%- endif %}
 {%- endif %}
 
-{%- if machine in ["WCOSS2"]  %}
+{%- if machine in ["WCOSS2","URSA"]  %}
 {%- if do_archive_retro and do_retro %}
 <!--
 ************************************************************************
@@ -4414,7 +4415,7 @@ MODULES_RUN_TASK_FP script.
     </dependency>
 
   </task>
-{%- else %}
+{%- elif machine in ["WCOSS2"] %}
 <!--
 ************************************************************************
 ************************************************************************

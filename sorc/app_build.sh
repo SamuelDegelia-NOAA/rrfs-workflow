@@ -334,9 +334,9 @@ if [ "${EXTRN}" = true ]; then
     rm -rf "${HOME_DIR}/exec/bin"
   fi
 
-  # run check-out
-  python --version 1>/dev/null 2>/dev/null
-  if [[ $? -ne 0 ]]; then
+  # run check-out; load a python module if none is on PATH (e.g. Ursa).
+  # Test with "if !" so set -e and the ERR trap don't exit before the fallback runs.
+  if ! python --version 1>/dev/null 2>/dev/null; then
        if [ "${PLATFORM}" = "wcoss2" ]; then
          module load cray-python/3.11.7
        else
