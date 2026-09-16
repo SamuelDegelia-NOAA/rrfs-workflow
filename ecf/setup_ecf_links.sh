@@ -1,10 +1,17 @@
 #!/bin/bash
 # Must be run from $PACKAGEHOME/ecf
 set -eux
-module load prod_util
+# prod_util provides cpreq; on Ursa it comes from modulefiles/run_ursa.lua (spack-stack)
+if [[ "$(hostname -f)" == *"ufe"* ]]; then
+  module use "$(pwd)/../modulefiles"
+  module load run_ursa
+else
+  module load prod_util
+fi
 
-# Assume resource is using NCO production configuration
-resource_config="NCO"
+# Assume resource is using NCO production configuration; RESOURCE_CONFIG=EMC selects the smaller
+# dev resources and 52-node forecast layouts (e.g. on Ursa, where Slurm jobs are limited to 75 nodes)
+resource_config=${RESOURCE_CONFIG:-NCO}
 ECF_DIR=$(pwd)
 
 # Create tmp file for git exclude
