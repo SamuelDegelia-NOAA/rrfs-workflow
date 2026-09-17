@@ -269,7 +269,7 @@ if  [[ ${regional_ensemble_option:-1} -eq 1 || ${l_both_fv3sar_gfs_ens} = ".true
 
   case $MACHINE in
 
-  "WCOSS2")
+  "WCOSS2" | "URSA")
 
     for loop in $loops; do
       shopt -s nullglob
@@ -281,8 +281,8 @@ if  [[ ${regional_ensemble_option:-1} -eq 1 || ${l_both_fv3sar_gfs_ens} = ".true
 
       else
       for timelist in "${file_list[@]}"; do
-        availtimeyyyymmdd=$(echo ${timelist} | cut -d'/' -f9 | cut -c 10-17)
-        availtimehh=$(echo ${timelist} | cut -d'/' -f10)
+        availtimeyyyymmdd=$(basename $(dirname $(dirname $(dirname $(dirname ${timelist})))) | cut -d'.' -f2)   # enkfgdas.YYYYMMDD
+        availtimehh=$(basename $(dirname $(dirname $(dirname ${timelist}))))                                     # HH
         availtime=${availtimeyyyymmdd}${availtimehh}
 
         loopfcst=$(echo ${loop}| cut -c 1-3)      # for nemsio 009s to get 009
@@ -310,7 +310,7 @@ if  [[ ${regional_ensemble_option:-1} -eq 1 || ${l_both_fv3sar_gfs_ens} = ".true
     fi
 
     ;;
-  "JET" | "HERA" | "ORION" | "HERCULES" | "URSA")
+  "JET" | "HERA" | "ORION" | "HERCULES")
 
     for loop in $loops; do
       for timelist in $(ls ${COMINgfs}/*.gdas.t*z.atmf${loop}.mem080.${ftype}); do
@@ -481,11 +481,11 @@ else
 
   case $MACHINE in
 
-  "WCOSS2")
+  "WCOSS2" | "URSA")
      obsfileprefix=${obs_source}
      obspath_tmp=${COMINobsproc}/${obs_source}.${YYYYMMDD}
     ;;
-  "JET" | "HERA" | "URSA")
+  "JET" | "HERA")
      obsfileprefix=${YYYYMMDDHH}.${obs_source}
      obspath_tmp=${COMINobsproc}
     ;;
