@@ -79,6 +79,9 @@ if [ "%MACHINE:WCOSS2%" = "URSA" ]; then
   module use ${HOMErrfs}/modulefiles
   module load run_ursa
   export UTILROOT=${prod_util_ROOT}
+  # Ursa copy of compath.py (prod_util's only works on WCOSS2) and the staged DCOM data
+  export PATH=${HOMErrfs}/ush/ursa:${PATH}
+  export DCOMROOT=%DCOMROOT:%
   echo "Listing modules from head.h:"
   module list
   set -xe

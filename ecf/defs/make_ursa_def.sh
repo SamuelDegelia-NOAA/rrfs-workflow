@@ -27,6 +27,13 @@ PARTITION=${PARTITION:-u1-compute}
 DEV_PTMP=${DEV_PTMP:-/scratch4/NCEPDEV/fv3-cam/${USER}/ecflow_rrfs/ptmp}
 DEV_DATAROOT=${DEV_DATAROOT:-/scratch4/NCEPDEV/fv3-cam/${USER}/ecflow_rrfs/stmp}
 ECFLOW_VER=${ECFLOW_VER:-5.11.4}
+# Upstream data in COM/DCOM layout (e.g. the retro link tree built by make_links.sh there)
+RETRO_DATA_ROOT=${RETRO_DATA_ROOT:-/scratch4/BMC/zrtrr/Samuel.Degelia/RRFS_RETRO_DATA_NCO}
+c=${RETRO_DATA_ROOT}/com
+DEV_COMPATH=${DEV_COMPATH:-$c/gfs:$c/gefs:$c/obsproc:$c/nsst:$c/nosofs:$c/hrrr:$c/rap}
+DCOMROOT=${DCOMROOT:-${RETRO_DATA_ROOT}/dcom}
+# YES: neutralize the clock-time triggers for a retro (see the end of this script)
+RETRO=${RETRO:-YES}
 # Server-level variables on WCOSS2 that the NCO suites expect; nodes that set them keep their values
 ENVIR=${ENVIR:-prod}
 RRFS_VER=${RRFS_VER:-v1.0}
@@ -35,7 +42,8 @@ MACHINE_SITE=${MACHINE_SITE:-development}
 awk -v q="'" -v ph="${PACKAGEHOME}" -v eh="${ECF_HOME}" -v od="${OUTPUTDIR}" \
     -v proj="${PROJ}" -v queue="${QUEUE}" -v part="${PARTITION}" \
     -v ptmp="${DEV_PTMP}" -v droot="${DEV_DATAROOT}" -v ev="${ECFLOW_VER}" \
-    -v envir="${ENVIR}" -v rver="${RRFS_VER}" -v site="${MACHINE_SITE}" '
+    -v envir="${ENVIR}" -v rver="${RRFS_VER}" -v site="${MACHINE_SITE}" \
+    -v compath="${DEV_COMPATH}" -v dcom="${DCOMROOT}" '
   function ed(name, value) { print ind "edit " name " " q value q }
   # suite-wide settings go right after the suite line
   $1 == "suite" && !done {
@@ -44,6 +52,8 @@ awk -v q="'" -v ph="${PACKAGEHOME}" -v eh="${ECF_HOME}" -v od="${OUTPUTDIR}" \
     ed("PARTITION", part)
     ed("DEV_PTMP", ptmp)
     ed("DEV_DATAROOT", droot)
+    ed("DEV_COMPATH", compath)
+    ed("DCOMROOT", dcom)
     ed("ecflow_ver", ev)
     ed("ENVIR", envir)
     ed("rrfs_ver", rver)
@@ -77,9 +87,16 @@ awk -v q="'" -v ph="${PACKAGEHOME}" -v eh="${ECF_HOME}" -v od="${OUTPUTDIR}" \
   { print }
 ' "${defs_dir}/${BASE_DEF}" > "${out_def}"
 
+# For retros, make every clock-time condition in the triggers always true; the dependencies on other
+# tasks and on /prod_clone stay, and the retro prod_clone steps the dates (ush/prod_clone/make_retro_def.sh)
+if [ "${RETRO}" = "YES" ]; then
+  sed -i -E 's/:TIME *(>=|>) *[0-9]{4}/:TIME >= 0000/g; s/:TIME *(<=|<) *[0-9]{4}/:TIME < 2400/g' "${out_def}"
+fi
+
 echo "Wrote ${out_def} from ${BASE_DEF}"
 echo "  PACKAGEHOME=${PACKAGEHOME}"
 echo "  ECF_HOME=${ECF_HOME}  (create it before loading the suite)"
 echo "  PROJ=${PROJ} QUEUE=${QUEUE} PARTITION=${PARTITION}"
 echo "  DEV_PTMP=${DEV_PTMP}"
 echo "  DEV_DATAROOT=${DEV_DATAROOT}"
+echo "  RETRO_DATA_ROOT=${RETRO_DATA_ROOT}"

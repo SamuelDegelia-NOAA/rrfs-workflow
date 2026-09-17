@@ -14,6 +14,24 @@ fi
 resource_config=${RESOURCE_CONFIG:-NCO}
 ECF_DIR=$(pwd)
 
+# On Ursa, build fix/ as links into a copy of the WCOSS2 fix tree (FIX_RRFS_DIR overrides it).
+# workflow/ is a local directory because the workflow.conf step below writes into it.
+if [[ "$(hostname -f)" == *"ufe"* ]]; then
+  fix_src=${FIX_RRFS_DIR:-/scratch4/NCEPDEV/fv3-cam/Shun.Liu/fix_nco_wcoss}
+  fix_dir=${ECF_DIR}/../fix
+  mkdir -p ${fix_dir}
+  for src in ${fix_src}/*; do
+    name=$(basename ${src})
+    [ "${name}" = "workflow" ] && continue
+    ln -snf ${src} ${fix_dir}/${name}
+  done
+  for wgf in det enkf ensf firewx; do
+    mkdir -p ${fix_dir}/workflow/${wgf}
+    ln -sf ${fix_src}/workflow/${wgf}/workflow.conf_prod ${fix_dir}/workflow/${wgf}/workflow.conf_prod
+    ln -sf ${fix_src}/workflow/${wgf}/workflow.conf_dev ${fix_dir}/workflow/${wgf}/workflow.conf_dev
+  done
+fi
+
 # Create tmp file for git exclude
 tmp_exclude="${ECF_DIR}/exclude_list.tmp"
 
@@ -76,6 +94,14 @@ else
   cpreq ./enkf/workflow.conf_dev ./enkf/workflow.conf
   cpreq ./ensf/workflow.conf_dev ./ensf/workflow.conf
   cpreq ./firewx/workflow.conf_dev ./firewx/workflow.conf
+fi
+
+# Ursa retros read the staged GFS GRIB2 files for the deterministic boundaries; the netcdf files
+# operations uses (hourly out to f102, four cycles a day) are far too large to stage.
+if [[ "$(hostname -f)" == *"ufe"* ]]; then
+  echo "Ursa: deterministic LBCs from GFS grib2..."
+  sed -i "s|^export GFS_FILE_FMT_LBCS=.*|export GFS_FILE_FMT_LBCS='grib2'|" ./det/workflow.conf
+  grep -n "GFS_FILE_FMT" ./det/workflow.conf
 fi
 
 # det prdgen files

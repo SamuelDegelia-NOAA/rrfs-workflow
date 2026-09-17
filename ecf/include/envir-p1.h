@@ -30,7 +30,9 @@ PTMP=%DEV_PTMP:/lfs/h3/emc/lam/noscrub/ecflow/ptmp%
 model=rrfs
 PSLOT=ecflow_rrfs
 export COMROOT=${PTMP}/${USER}/${PSLOT}/para/com
-export COMPATH=${COMROOT}/${model}
+# DEV_COMPATH adds upstream COM directories to search, e.g. staged retro data on Ursa
+DEV_COMPATH="%DEV_COMPATH:%"
+export COMPATH=${COMROOT}/${model}${DEV_COMPATH:+:${DEV_COMPATH}}
 if [ -n "%PDY:%" ]; then
   export PDY=${PDY:-%PDY:%}
 else
