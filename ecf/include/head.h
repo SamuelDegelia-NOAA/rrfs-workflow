@@ -82,6 +82,9 @@ if [ "%MACHINE:WCOSS2%" = "URSA" ]; then
   # Ursa copy of compath.py (prod_util's only works on WCOSS2) and the staged DCOM data
   export PATH=${HOMErrfs}/ush/ursa:${PATH}
   export DCOMROOT=%DCOMROOT:%
+  # the ecflow module points ECF_HOST/ECF_PORT at the site server, so set them back to this suite's
+  export ECF_HOST=%ECF_LOGHOST%
+  export ECF_PORT=%ECF_PORT%
   echo "Listing modules from head.h:"
   module list
   set -xe
