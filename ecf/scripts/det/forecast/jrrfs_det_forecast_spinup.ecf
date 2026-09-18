@@ -12,8 +12,10 @@
 #SBATCH --qos=%QUEUE%
 #SBATCH --partition=%PARTITION:u1-compute%
 #SBATCH --time=00:30:00
-#SBATCH --nodes=31
+# Ursa: 48 ranks per node instead of 64, so the same rank count needs more nodes
+#SBATCH --nodes=42
 #SBATCH --exclusive
+#SBATCH --mem=0
 #SBATCH --output=%ECF_JOBOUT%
 #
 model=rrfs
