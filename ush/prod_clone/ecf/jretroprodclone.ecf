@@ -15,6 +15,9 @@ set +xe
 if ! type module >/dev/null 2>&1; then source /etc/profile; fi
 module load ecflow/%ecflow_ver%
 set -xe
+# the module points these at the site server; this suite runs its own
+export ECF_HOST=%ECF_HOST%
+export ECF_PORT=%ECF_PORT%
 # ecflow's python module is built for the system python3
 ecflow_site=$(ls -d $(dirname $(command -v ecflow_client))/../lib/python3*/site-packages | head -1)
 export PYTHONPATH=${ecflow_site}${PYTHONPATH:+:${PYTHONPATH}}

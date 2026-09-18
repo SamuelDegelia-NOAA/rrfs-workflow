@@ -23,6 +23,8 @@ Settings (environment):
   GEFS_LAST_FHR           last GEFS lead time staged (default 60)
   ALWAYS_COMPLETE         comma-separated upstream systems with no staged data, completed without a
                           file check so dependent jobs don't wait forever (default: nosofs)
+  RRFS_STATUS_DIR         where to write the status files each pass (default: alongside the state
+                          file); set to NONE to skip. See ush/ursa/rrfsstat.
   SKIP_FIRST_DAY          YES (default) completes the cycles on the first retro day that would warm
                           start from restarts nothing has produced yet; see skip_first_day() below
   DET_COLD_HR             first deterministic production cycle with a spinup behind it (default 09)
@@ -33,6 +35,7 @@ import datetime
 import json
 import os
 import re
+import subprocess
 import sys
 
 import ecflow
@@ -47,6 +50,7 @@ PRODCLONE_SUITE = os.getenv("PRODCLONE_SUITE", "prod_clone")
 GFS_LAST_FHR = int(os.getenv("GFS_LAST_FHR", "90"))
 GEFS_LAST_FHR = int(os.getenv("GEFS_LAST_FHR", "60"))
 ALWAYS_COMPLETE = [s for s in os.getenv("ALWAYS_COMPLETE", "nosofs").split(",") if s]
+STATUS_DIR = os.getenv("RRFS_STATUS_DIR", os.path.dirname(os.path.abspath(STATE_FILE)))
 SKIP_FIRST_DAY = os.getenv("SKIP_FIRST_DAY", "YES").upper() == "YES"
 DET_COLD_HR = int(os.getenv("DET_COLD_HR", "9"))
 ENKF_COLD_HR = int(os.getenv("ENKF_COLD_HR", "7"))
@@ -124,19 +128,28 @@ def next_family(fam, pdy):
     return FAMILIES[0], day.strftime("%Y%m%d")
 
 
+def rrfs_family(fam):
+    return f"/{RRFS_SUITE}/primary/{fam}/rrfs/{RRFS_VER}"
+
+
 def release(ci, fam, pdy):
-    """Point both suites' family <fam> at <pdy> and requeue them."""
+    """Point both suites' family <fam> at <pdy> and requeue them, held suspended.
+
+    The family stays suspended until main() has had a chance to skip the first day's warm-start
+    cycles; otherwise the server submits those tasks before they can be completed.
+    """
     clone = f"/{PRODCLONE_SUITE}/primary/{fam}"
     rrfs = f"/{RRFS_SUITE}/primary/{fam}"
     for path in (clone, rrfs):
         set_variable(ci, path, "PDY", pdy)
+    fam_path = rrfs_family(fam)
+    ci.suspend(fam_path)
     ci.requeue(clone)
     # requeue resets a node to its default status, and the RRFS families are defined with
     # "defstatus complete" (NCO releases them); make them default to queued so they run
-    fam_path = f"{rrfs}/rrfs/{RRFS_VER}"
     ci.alter(fam_path, "change", "defstatus", "queued")
     ci.requeue(fam_path)
-    print(f"released primary/{fam} for {pdy}")
+    print(f"released primary/{fam} for {pdy} (held suspended while states are set)")
 
 
 def skip_first_day(ci, defs, fam, pdy):
@@ -169,6 +182,38 @@ def skip_first_day(ci, defs, fam, pdy):
         print(f"first retro day: completed {skipped} warm-start tasks in primary/{fam} without running them")
 
 
+def write_status():
+    """Refresh the plain-text status files, so progress can be read without the ecflow GUI."""
+    if STATUS_DIR.upper() == "NONE":
+        return
+    rrfsstat = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "ursa", "rrfsstat")
+    if not os.path.exists(rrfsstat):
+        return
+    common = [sys.executable, rrfsstat, "--suite", RRFS_SUITE]
+    for args, name in (([], "rrfs_status.txt"),
+                       (["-t", "-s", "aborted,active,submitted,queued"], "rrfs_status_tasks.txt")):
+        try:
+            subprocess.run(common + args + ["-o", os.path.join(STATUS_DIR, name)],
+                           check=False, timeout=120)
+        except (OSError, subprocess.SubprocessError) as err:
+            print(f"WARNING: could not write {name}: {err}")
+
+
+def prime_clone_history(ci, pdy):
+    """Give the previous day's /prod_clone families a date so the first cycles can start.
+
+    The first day's families trigger on upstream jobs from the day before (e.g. the 00z boundary
+    tasks wait on /prod_clone/primary/18 GFS post), which the retro never releases. Pointing those
+    clone families at the previous day lets mark_upstream() complete them from the staged files.
+    """
+    prev = (datetime.datetime.strptime(pdy, "%Y%m%d") - datetime.timedelta(days=1)).strftime("%Y%m%d")
+    for fam in FAMILIES[1:]:
+        path = f"/{PRODCLONE_SUITE}/primary/{fam}"
+        set_variable(ci, path, "PDY", prev)
+        ci.requeue(path)
+    print(f"primed /{PRODCLONE_SUITE}/primary/{{{','.join(FAMILIES[1:])}}} with {prev} (day before the retro)")
+
+
 def load_state():
     try:
         with open(STATE_FILE) as f:
@@ -187,6 +232,7 @@ def save_state(state):
 def step_dates(ci, defs):
     state = load_state()
     if state is None:
+        prime_clone_history(ci, RETRO_START)
         release(ci, FAMILIES[0], RETRO_START)
         save_state({"family": FAMILIES[0], "pdy": RETRO_START})
         return
@@ -248,9 +294,15 @@ def main():
     state = load_state()
     if state:
         skip_first_day(ci, defs, state["family"], state["pdy"])
+        # release() suspends the family so the skip above wins the race with the scheduler
+        fam_path = rrfs_family(state["family"])
+        if defs.find_abs_node(fam_path).is_suspended():
+            ci.resume(fam_path)
+            print(f"resumed {fam_path}")
         ci.sync_local()
         defs = ci.get_defs()
     mark_upstream(ci, defs)
+    write_status()
 
 
 if __name__ == "__main__":

@@ -12,15 +12,10 @@ set -eu
 clone_dir=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)
 out_def=${1:-${clone_dir}/ecf/defs_retro.def}
 
-# rrfs-workflow clone (holds ush/prod_clone)
+# Settings live in ecf/defs/ursa_config.sh; environment variables still win.
 PACKAGEHOME=${PACKAGEHOME:-$(cd "${clone_dir}/../.." && pwd)}
-# same ECF_HOME as the RRFS suite (see ecf/defs/make_ursa_def.sh); the retro state file goes here too
-ECF_HOME=${ECF_HOME:-/scratch4/NCEPDEV/fv3-cam/${USER}/ecflow_rrfs/submit}
-RETRO_DATA_ROOT=${RETRO_DATA_ROOT:-/scratch4/BMC/zrtrr/Samuel.Degelia/RRFS_RETRO_DATA_NCO}
-RETRO_START=${RETRO_START:-20240506}
-RETRO_END=${RETRO_END:-20240512}
-RRFS_SUITE=${RRFS_SUITE:-para}
-ECFLOW_VER=${ECFLOW_VER:-5.11.4}
+# shellcheck source=/dev/null
+. "${PACKAGEHOME}/ecf/defs/ursa_config.sh"
 
 awk -v q="'" -v ph="${PACKAGEHOME}" -v eh="${ECF_HOME}" -v com="${RETRO_DATA_ROOT}/com" \
     -v start="${RETRO_START}" -v end="${RETRO_END}" -v suite="${RRFS_SUITE}" -v ev="${ECFLOW_VER}" '

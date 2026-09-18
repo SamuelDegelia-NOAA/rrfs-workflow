@@ -11,38 +11,20 @@ set -eu
 defs_dir=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)
 out_def=${1:-${defs_dir}/rrfs_ursa.def}
 
-# Suite definition to copy (relative to ecf/defs). nco_para triggers on the prod_clone suite for
-# upstream (GFS, obsproc, ...) data; rrfs_prod.def is the retired FSM-based real-time suite.
-BASE_DEF=${BASE_DEF:-nco_para/rrfs_nco_para.def}
-# rrfs-workflow clone holding ecf/, jobs/, scripts/ and fix/
+# Settings live in ursa_config.sh next to this script; environment variables still win.
+# shellcheck source=/dev/null
+. "${defs_dir}/ursa_config.sh"
+
+# Derived from the settings above
 PACKAGEHOME=${PACKAGEHOME:-$(cd "${defs_dir}/../.." && pwd)}
-# ecflow job files and job output (the server creates the task directories under it)
-ECF_HOME=${ECF_HOME:-/scratch4/NCEPDEV/fv3-cam/${USER}/ecflow_rrfs/submit}
-OUTPUTDIR=${OUTPUTDIR:-/scratch4/NCEPDEV/fv3-cam/${USER}/ecflow_rrfs/output}
-# Slurm account (PROJ), QOS (QUEUE) and partition used in the #SBATCH lines of the ecf scripts
-PROJ=${PROJ:-fv3-cam}
-QUEUE=${QUEUE:-batch}
-PARTITION=${PARTITION:-u1-compute}
-# COMROOT is ${DEV_PTMP}/${USER}/ecflow_rrfs/para/com; DATAROOT holds the job working directories
-DEV_PTMP=${DEV_PTMP:-/scratch4/NCEPDEV/fv3-cam/${USER}/ecflow_rrfs/ptmp}
-DEV_DATAROOT=${DEV_DATAROOT:-/scratch4/NCEPDEV/fv3-cam/${USER}/ecflow_rrfs/stmp}
-ECFLOW_VER=${ECFLOW_VER:-5.11.4}
-# Upstream data in COM/DCOM layout (e.g. the retro link tree built by make_links.sh there)
-RETRO_DATA_ROOT=${RETRO_DATA_ROOT:-/scratch4/BMC/zrtrr/Samuel.Degelia/RRFS_RETRO_DATA_NCO}
 c=${RETRO_DATA_ROOT}/com
 DEV_COMPATH=${DEV_COMPATH:-$c/gfs:$c/gefs:$c/obsproc:$c/nsst:$c/nosofs:$c/hrrr:$c/rap}
 DCOMROOT=${DCOMROOT:-${RETRO_DATA_ROOT}/dcom}
-# YES: neutralize the clock-time triggers for a retro (see the end of this script)
-RETRO=${RETRO:-YES}
-# Server-level variables on WCOSS2 that the NCO suites expect; nodes that set them keep their values
-ENVIR=${ENVIR:-prod}
-RRFS_VER=${RRFS_VER:-v1.0}
-MACHINE_SITE=${MACHINE_SITE:-development}
 
 awk -v q="'" -v ph="${PACKAGEHOME}" -v eh="${ECF_HOME}" -v od="${OUTPUTDIR}" \
     -v proj="${PROJ}" -v queue="${QUEUE}" -v part="${PARTITION}" \
     -v ptmp="${DEV_PTMP}" -v droot="${DEV_DATAROOT}" -v ev="${ECFLOW_VER}" \
-    -v envir="${ENVIR}" -v rver="${RRFS_VER}" -v site="${MACHINE_SITE}" \
+    -v envir="${ENVIR}" -v rver="${RRFS_VER}" -v site="${MACHINE_SITE}" -v eh_host="${ECFLOW_HOST}" \
     -v compath="${DEV_COMPATH}" -v dcom="${DCOMROOT}" '
   function ed(name, value) { print ind "edit " name " " q value q }
   # suite-wide settings go right after the suite line
@@ -55,6 +37,7 @@ awk -v q="'" -v ph="${PACKAGEHOME}" -v eh="${ECF_HOME}" -v od="${OUTPUTDIR}" \
     ed("DEV_COMPATH", compath)
     ed("DCOMROOT", dcom)
     ed("ecflow_ver", ev)
+    ed("ECF_LOGHOST", eh_host)
     ed("ENVIR", envir)
     ed("rrfs_ver", rver)
     ed("MACHINE_SITE", site)
