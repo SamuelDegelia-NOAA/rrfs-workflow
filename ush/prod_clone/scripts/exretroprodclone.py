@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Retro stand-in for exupdateprodclonestatuses.py (used on Ursa).
+"""Retro stand-in for exupdateprodclonestatuses.py.
 
 In real time, /prod_clone mirrors the operational upstream jobs (GFS, GEFS, obsproc, ...) by copying
 their states from the production ecflow checkpoint. For a retro there is no production suite, so this
@@ -24,7 +24,7 @@ Settings (environment):
   ALWAYS_COMPLETE         comma-separated upstream systems with no staged data, completed without a
                           file check so dependent jobs don't wait forever (default: nosofs)
   RRFS_STATUS_DIR         where to write the status files each pass (default: alongside the state
-                          file); set to NONE to skip. See ush/ursa/rrfsstat.
+                          file); set to NONE to skip. See ush/retro/rrfsstat.
   SKIP_FIRST_DAY          YES (default) completes the cycles on the first retro day that would warm
                           start from restarts nothing has produced yet; see skip_first_day() below
   DET_COLD_HR             first deterministic production cycle with a spinup behind it (default 09)
@@ -325,7 +325,7 @@ def write_status():
     """Refresh the plain-text status files, so progress can be read without the ecflow GUI."""
     if STATUS_DIR.upper() == "NONE":
         return
-    rrfsstat = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "ursa", "rrfsstat")
+    rrfsstat = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "retro", "rrfsstat")
     if not os.path.exists(rrfsstat):
         return
     common = [sys.executable, rrfsstat, "--suite", RRFS_SUITE]

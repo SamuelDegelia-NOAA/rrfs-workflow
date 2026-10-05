@@ -1,7 +1,7 @@
 #!/bin/bash
-# Retro version of jupdateprodclonestatuses for Ursa (see scripts/exretroprodclone.py).
-# Runs every minute on the ecflow server host rather than through Slurm, so it only needs the
-# ecflow client and its python module.
+# Retro version of jupdateprodclonestatuses (see scripts/exretroprodclone.py).
+# Runs every minute on the ecflow server host rather than through the batch system, so it only
+# needs the ecflow client and its python module.
 set -xe
 
 export ECF_NAME=%ECF_NAME%

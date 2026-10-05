@@ -1,13 +1,13 @@
 #!/bin/bash
 #
-# Ursa, coarser domains (strip when merging to the nco branch): this whole directory is for
-# development runs on Ursa; operations runs only RRFS_NA_3km.
+# Coarser domains (strip when merging to the nco branch): this whole directory is for
+# development retros; operations runs only RRFS_NA_3km.
 #
 # RRFS_CONUS_13km: ESG grid C775, 420 x 252 points at 13 km, centred on 38.5N 97.5W.
 # Grid and write-component values come from dev-sci's ush/set_predef_grid_params.sh; job sizes
 # and science settings from its ush/set_rrfs_config_general.sh (WCOSS2/Ursa block) and the
 # RRFS_v1.2 13 km retro sample configs. Sourced by ecf/setup_ecf_links.sh and
-# ecf/defs/make_ursa_def.sh when DOMAIN=RRFS_CONUS_13km in ursa_config.sh.
+# ecf/defs/make_rrfs_retro_def.sh when DOMAIN=RRFS_CONUS_13km in retro_config.sh.
 #
 
 # Fix files for this grid, from dev-sci's shared fix tree on Ursa. setup_ecf_links.sh links each
@@ -123,9 +123,9 @@ export DO_ENS_BLENDING='FALSE'
 EOF
 }
 
-# Job sizes: <ecflow task-name glob>:<extra sbatch options>. make_ursa_def.sh puts the options on
-# the matching tasks, and sbatch command-line options override the #SBATCH lines in the ecf cards,
-# so the cards themselves stay as they are.
+# Job sizes: <ecflow task-name glob>:<extra sbatch options>. make_rrfs_retro_def.sh puts the
+# options on the matching tasks, and sbatch command-line options override the #SBATCH lines in the
+# ecf cards, so the cards themselves stay as they are.
 DOMAIN_SBATCH=(
   # ensf: 5 members of a 60 h forecast. The cards ask for 68 nodes per member and 4 per post, as
   # the NA domain needs; at this resolution one node does either. prep_cyc, make_lbcs and prdgen

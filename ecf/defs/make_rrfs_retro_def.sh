@@ -1,25 +1,24 @@
 #!/bin/bash
 #
-# Make an Ursa copy of an RRFS suite definition that submits jobs with Slurm.
-# The task tree is unchanged; only suite-wide variables are replaced or added.
+# Make a developer copy of an RRFS suite definition for the machine in retro_config.sh (MACHINE):
+# its locations, its job submission commands, and, for a retro (RETRO=YES), triggers that step
+# through past dates instead of following the clock. The task tree is unchanged.
 #
-# Usage: [VAR=value ...] ./make_ursa_def.sh [output_def]
-# Any of the settings below can be overridden from the environment.
+# Usage: [VAR=value ...] ./make_rrfs_retro_def.sh [output_def]
+# Any of the settings in retro_config.sh can be overridden from the environment.
 #
 set -eu
 
 defs_dir=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)
-out_def=${1:-${defs_dir}/rrfs_ursa.def}
+out_def=${1:-${defs_dir}/rrfs_retro.def}
 
-# Settings live in ursa_config.sh next to this script; environment variables still win.
+# Settings live in retro_config.sh next to this script; environment variables still win.
 # shellcheck source=/dev/null
-if [ ! -f "${defs_dir}/ursa_config.sh" ]; then
-  echo "ecf/defs/ursa_config.sh not found." >&2
-  echo "Link or copy the sample for your domain, e.g." >&2
-  echo "  ln -s ursa_config_na3km.sh ecf/defs/ursa_config.sh" >&2
-  exit 1
-fi
-. "${defs_dir}/ursa_config.sh"
+. "${defs_dir}/load_retro_config.sh"
+case ${MACHINE} in
+  URSA) ;;
+  *) echo "MACHINE=${MACHINE} is not supported; the retro suite runs on URSA only so far" >&2; exit 1 ;;
+esac
 
 # Derived from the settings above
 PACKAGEHOME=${PACKAGEHOME:-$(cd "${defs_dir}/../.." && pwd)}
@@ -27,8 +26,8 @@ c=${RETRO_DATA_ROOT}/com
 DEV_COMPATH=${DEV_COMPATH:-$c/gfs:$c/gefs:$c/obsproc:$c/nsst:$c/nosofs:$c/hrrr:$c/rap}
 DCOMROOT=${DCOMROOT:-${RETRO_DATA_ROOT}/dcom}
 
-awk -v q="'" -v ph="${PACKAGEHOME}" -v eh="${ECF_HOME}" -v od="${OUTPUTDIR}" \
-    -v proj="${PROJ}" -v queue="${QUEUE}" -v part="${PARTITION}" \
+awk -v q="'" -v machine="${MACHINE}" -v ph="${PACKAGEHOME}" -v eh="${ECF_HOME}" -v od="${OUTPUTDIR}" \
+    -v proj="${PROJ}" -v queue="${QUEUE}" -v part="${PARTITION:-}" \
     -v ptmp="${DEV_PTMP}" -v droot="${DEV_DATAROOT}" -v ev="${ECFLOW_VER}" \
     -v envir="${ENVIR}" -v rver="${RRFS_VER}" -v site="${MACHINE_SITE}" -v eh_host="${ECFLOW_HOST}" \
     -v compath="${DEV_COMPATH}" -v dcom="${DCOMROOT}" '
@@ -36,8 +35,8 @@ awk -v q="'" -v ph="${PACKAGEHOME}" -v eh="${ECF_HOME}" -v od="${OUTPUTDIR}" \
   # suite-wide settings go right after the suite line
   $1 == "suite" && !done {
     print; ind = "  "; done = 1
-    ed("MACHINE", "URSA")
-    ed("PARTITION", part)
+    ed("MACHINE", machine)
+    if (machine == "URSA") ed("PARTITION", part)
     ed("DEV_PTMP", ptmp)
     ed("DEV_DATAROOT", droot)
     ed("DEV_COMPATH", compath)
@@ -57,13 +56,15 @@ awk -v q="'" -v ph="${PACKAGEHOME}" -v eh="${ECF_HOME}" -v od="${OUTPUTDIR}" \
     ed("OUTPUTDIR", od)
     ed("ECF_HOME", eh)
     ed("ECF_INCLUDE", ph "/ecf/include")
-    # sbatch would otherwise also read the #PBS lines (e.g. "-q" as the partition).
-    # Ursa, coarser domains (strip when merging to the nco branch): SBATCH_OVERRIDES carries
-    # per-task job sizes for other domains, since sbatch options win over the #SBATCH lines in cards.
-    ed("SBATCH_OVERRIDES", "")
-    ed("ECF_JOB_CMD", "sbatch --ignore-pbs %SBATCH_OVERRIDES% %ECF_JOB% 1> %ECF_JOB%.sub 2>&1")
-    ed("ECF_KILL_CMD", "scancel %ECF_RID% 1> %ECF_JOB%.kill 2>&1")
-    ed("ECF_STATUS_CMD", "squeue -j %ECF_RID% 1> %ECF_JOB%.stat 2>&1")
+    if (machine == "URSA") {
+      # sbatch would otherwise also read the #PBS lines (e.g. "-q" as the partition).
+      # Coarser domains (strip when merging to the nco branch): SBATCH_OVERRIDES carries
+      # per-task job sizes for other domains, since sbatch options win over the #SBATCH lines in cards.
+      ed("SBATCH_OVERRIDES", "")
+      ed("ECF_JOB_CMD", "sbatch --ignore-pbs %SBATCH_OVERRIDES% %ECF_JOB% 1> %ECF_JOB%.sub 2>&1")
+      ed("ECF_KILL_CMD", "scancel %ECF_RID% 1> %ECF_JOB%.kill 2>&1")
+      ed("ECF_STATUS_CMD", "squeue -j %ECF_RID% 1> %ECF_JOB%.stat 2>&1")
+    }
     next
   }
   # WCOSS2 locations and queues set further down would override the suite-level values
@@ -135,7 +136,7 @@ EOF
     exit 1
   fi
 
-  # Workflow groups switched off in ursa_config.sh (RUN_ENKF, RUN_ENSF, RUN_FIREWX): the same
+  # Workflow groups switched off in retro_config.sh (RUN_ENKF, RUN_ENSF, RUN_FIREWX): the same
   # mechanism as cycle_end above, applied to the whole family.
   for wgf in enkf ensf firewx; do
     run_var=RUN_$(echo "${wgf}" | tr '[:lower:]' '[:upper:]')
@@ -262,11 +263,8 @@ open(path, "w").write("\n".join(lines))
 EOF
 fi
 
-# Ursa, coarser domains (strip when merging to the nco branch): give the tasks the domain's table
+# Coarser domains (strip when merging to the nco branch): give the tasks the domain's table
 # names their job sizes through SBATCH_OVERRIDES
-# default here as well as in the config, so an unset DOMAIN cannot send it looking for a
-# domain file that does not exist
-DOMAIN=${DOMAIN:-RRFS_NA_3km}
 if [ "${DOMAIN}" != "RRFS_NA_3km" ]; then
   # shellcheck source=/dev/null
   . "${defs_dir}/domains/${DOMAIN}.sh"
@@ -291,7 +289,7 @@ fi
 echo "Wrote ${out_def} from ${BASE_DEF}"
 echo "  PACKAGEHOME=${PACKAGEHOME}"
 echo "  ECF_HOME=${ECF_HOME}  (create it before loading the suite)"
-echo "  PROJ=${PROJ} QUEUE=${QUEUE} PARTITION=${PARTITION}"
+echo "  MACHINE=${MACHINE} PROJ=${PROJ} QUEUE=${QUEUE} PARTITION=${PARTITION:-}"
 echo "  DEV_PTMP=${DEV_PTMP}"
 echo "  DEV_DATAROOT=${DEV_DATAROOT}"
 echo "  RETRO_DATA_ROOT=${RETRO_DATA_ROOT}"

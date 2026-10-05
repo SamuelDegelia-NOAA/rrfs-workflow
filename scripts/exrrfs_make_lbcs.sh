@@ -161,7 +161,7 @@ case "${extrn_mdl_name}" in
     fcst_hhh=( $( printf "%03d " "${lbc_spec_fhrs[@]}" ) )
     prefix="rrfs.t${hh}z.natlev.3km.f"
     suffix=".na.grib2"
-    # Ursa, coarser domains (strip when merging to the nco branch): fire weather takes its boundaries
+    # Coarser domains (strip when merging to the nco branch): fire weather takes its boundaries
     # from the parent deterministic post, whose products carry that domain's own grid spacing and
     # name rather than the NA ones. This task runs as the 1.5 km fire weather grid, so the parent
     # domain is not in its environment; read the spacing and name off a file the parent wrote.

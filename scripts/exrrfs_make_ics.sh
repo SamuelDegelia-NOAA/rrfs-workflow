@@ -125,7 +125,7 @@ case "${extrn_mdl_name}" in
   "RRFS")
     sysdir="${COMIN}/rrfs.${yyyymmdd}/${hh}"
     fns_on_disk=( "rrfs.t${hh}z.natlev.3km.f0${fcst_hh}.na.grib2" )
-    # Ursa, coarser domains (strip when merging to the nco branch): fire weather takes its initial
+    # Coarser domains (strip when merging to the nco branch): fire weather takes its initial
     # conditions from the parent deterministic post, whose products carry that domain's own grid
     # spacing and name rather than the NA ones. This task runs as the 1.5 km fire weather grid, so
     # the parent domain is not in its environment; take whichever natlev file the parent wrote.

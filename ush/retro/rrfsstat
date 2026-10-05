@@ -16,7 +16,7 @@ it prints one line per cycle (a rollup); --tasks prints one line per task, like 
   rrfsstat -l 60                    refresh every 60 seconds until interrupted
 
 The server to talk to comes from --host/--port, else ECF_HOST/ECF_PORT, else the host in
-ecf/defs/ursa_config.sh and port 1500 + your uid, which is what the ecflow module sets. So it
+ecf/defs/retro_config.sh and port 1500 + your uid, which is what the ecflow module sets. So it
 works with or without the module loaded; pass --port only if your server runs on another port.
 
 States are ecflow's: queued, submitted, active, complete, aborted, suspended, unknown.
@@ -43,14 +43,20 @@ DEFAULT_SUITE = "para"
 
 
 def settings_from_config():
-    """Fall back to ecf/defs/ursa_config.sh so this works without any environment set up."""
+    """Fall back to ecf/defs/retro_config.sh (or its old name, ursa_config.sh) so this works
+    without any environment set up."""
     here = os.path.dirname(os.path.realpath(__file__))
-    cfg = os.path.join(here, "..", "..", "ecf", "defs", "ursa_config.sh")
+    defs = os.path.join(here, "..", "..", "ecf", "defs")
     host = port = None
-    try:
-        with open(cfg) as f:
-            text = f.read()
-    except OSError:
+    text = None
+    for name in ("retro_config.sh", "ursa_config.sh"):
+        try:
+            with open(os.path.join(defs, name)) as f:
+                text = f.read()
+            break
+        except OSError:
+            continue
+    if text is None:
         return host, port
     m = re.search(r"^ECFLOW_HOST=\$\{ECFLOW_HOST:-([^}]+)\}", text, re.M)
     if m:
@@ -254,7 +260,7 @@ def print_workflow(rows, jobs, out):
 
 def main():
     p = argparse.ArgumentParser(description="state of the RRFS ecflow suite, rocotostat style")
-    p.add_argument("--host", help="ecflow server host (default: ECF_HOST, then ursa_config.sh)")
+    p.add_argument("--host", help="ecflow server host (default: ECF_HOST, then retro_config.sh)")
     p.add_argument("--port", help="ecflow server port (default: ECF_PORT)")
     p.add_argument("--suite", default=os.getenv("RRFS_SUITE", DEFAULT_SUITE))
     p.add_argument("-t", "--tasks", action="store_true", help="one line per task, not a rollup")
