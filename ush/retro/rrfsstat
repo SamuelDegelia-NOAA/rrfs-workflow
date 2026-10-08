@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 # /usr/bin/python3 (3.9), not env python3: the ecflow module's Python bindings are built for 3.9
-# and crash under the spack-stack 3.11 that is often first on PATH on Ursa.
+# and crash under the spack-stack 3.11 that is often first on PATH on Ursa. On WCOSS2 the system
+# python3 is older than the bindings; load the python module of their version and run
+# "python3 rrfsstat" instead.
 """Show the state of the RRFS ecflow suite as text, in the spirit of rocotostat.
 
 ecflow keeps the workflow state on the server, so this asks the server and prints it. By default
@@ -16,8 +18,9 @@ it prints one line per cycle (a rollup); --tasks prints one line per task, like 
   rrfsstat -l 60                    refresh every 60 seconds until interrupted
 
 The server to talk to comes from --host/--port, else ECF_HOST/ECF_PORT, else the host in
-ecf/defs/retro_config.sh and port 1500 + your uid, which is what the ecflow module sets. So it
-works with or without the module loaded; pass --port only if your server runs on another port.
+ecf/defs/retro_config.sh and port 1500 + your uid on Ursa (what the ecflow module sets) or
+2000 + your uid on WCOSS2 (what NCO assigns). So it works with or without the module loaded; pass
+--port only if your server runs on another port.
 
 States are ecflow's: queued, submitted, active, complete, aborted, suspended, unknown.
 "aborted" is the one to look at; it means the job failed. "suspended" is a node someone held.
@@ -26,13 +29,19 @@ a task the retro set aside on purpose, which is complete but never ran, as SET-A
 """
 
 import argparse
+import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
 
-import ecflow
+try:
+    import ecflow
+except ImportError:
+    sys.exit("rrfsstat: cannot import ecflow. Load the ecflow module, and on WCOSS2 also the python\n"
+             "  module matching its bindings, then run it as: python3 rrfsstat ...")
 
 # most interesting first, so the states worth acting on sort to the top of a task listing
 STATE_ORDER = ["aborted", "active", "submitted", "queued", "unknown", "complete"]
@@ -65,8 +74,8 @@ def settings_from_config():
 
 
 def default_port():
-    """The port the ecflow module gives each user, 1500 + uid, which is where the server runs."""
-    return str(1500 + os.getuid())
+    """Each user's own port: 1500 + uid from Ursa's ecflow module, 2000 + uid assigned by NCO on WCOSS2."""
+    return str((2000 if os.path.isdir("/apps/ops/prod") else 1500) + os.getuid())
 
 
 def tasks_under(node):
@@ -133,18 +142,28 @@ def collect(defs, suite, cycle_filter, state_filter, show_all=False):
 
 
 def slurm_jobs():
-    """Running and pending job names from squeue, to show alongside the ecflow state."""
+    """Running and pending job names from squeue (Ursa) or qstat (WCOSS2), to show alongside the
+    ecflow state, as {name: (state, elapsed)} with Slurm's state words."""
+    user = os.environ.get("USER", "")
     try:
-        out = subprocess.run(["squeue", "-u", os.environ.get("USER", ""), "-h", "-o", "%j|%T|%M"],
-                             capture_output=True, text=True, timeout=20).stdout
-    except (OSError, subprocess.SubprocessError):
+        if shutil.which("squeue"):
+            out = subprocess.run(["squeue", "-u", user, "-h", "-o", "%j|%T|%M"],
+                                 capture_output=True, text=True, timeout=20).stdout
+            return {p[0]: (p[1], p[2]) for p in (l.split("|") for l in out.splitlines()) if len(p) == 3}
+        ids = subprocess.run(["qselect", "-u", user], capture_output=True, text=True,
+                             timeout=20).stdout.split()
+        if not ids:
+            return {}
+        out = subprocess.run(["qstat", "-f", "-F", "json"] + ids, capture_output=True, text=True,
+                             timeout=60).stdout
+        pbs_state = {"R": "RUNNING", "E": "RUNNING", "Q": "PENDING", "H": "HELD", "W": "PENDING"}
+        jobs = {}
+        for j in json.loads(out).get("Jobs", {}).values():
+            elapsed = j.get("resources_used", {}).get("walltime", "")
+            jobs[j.get("Job_Name", "")] = (pbs_state.get(j.get("job_state"), j.get("job_state", "")), elapsed)
+        return jobs
+    except (OSError, subprocess.SubprocessError, ValueError):
         return {}
-    jobs = {}
-    for line in out.splitlines():
-        parts = line.split("|")
-        if len(parts) == 3:
-            jobs[parts[0]] = (parts[1], parts[2])
-    return jobs
 
 
 def print_rollup(rows, jobs, out):
@@ -165,13 +184,13 @@ def print_rollup(rows, jobs, out):
             line += f"   (+{susp} suspended)"
         print(line, file=out)
     running = sum(1 for v in jobs.values() if v[0] == "RUNNING")
-    print(f"\nslurm: {len(jobs)} job(s) in the queue, {running} running", file=out)
+    print(f"\nbatch: {len(jobs)} job(s) in the queue, {running} running", file=out)
 
 
 def print_tasks(rows, jobs, out):
     order = {s: i for i, s in enumerate(STATE_ORDER)}
     rows = sorted(rows, key=lambda r: (order.get(r["state"], 99), r["pdy"], r["cycle"], r["task"]))
-    head = f"{'CYCLE':<16}{'TASK':<58}{'STATE':<11}{'TRY':>4}  {'CHANGED':<16}{'SLURM':<20}"
+    head = f"{'CYCLE':<16}{'TASK':<58}{'STATE':<11}{'TRY':>4}  {'CHANGED':<16}{'BATCH':<20}"
     print(head, file=out)
     print("-" * len(head), file=out)
     for r in rows:
@@ -242,7 +261,7 @@ def print_workflow(rows, jobs, out):
     cycles = {}
     for r in rows:
         cycles.setdefault((r["pdy"], r["cycle"]), []).append(r)
-    print("STATE: DONE complete, RUNNING active, SUBMITTED queued in Slurm, QUEUED waiting on a "
+    print("STATE: DONE complete, RUNNING active, SUBMITTED in the batch queue, QUEUED waiting on a "
           "trigger,\n       FAILED aborted, HELD suspended, SET-ASIDE completed without running\n", file=out)
     for (pdy, cyc), items in cycles.items():
         counts = {}

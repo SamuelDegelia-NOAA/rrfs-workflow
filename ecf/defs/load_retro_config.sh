@@ -34,3 +34,8 @@ unset _retro_defs_dir
 MACHINE=${MACHINE:-URSA}
 # The NA sample leaves DOMAIN out; default it here so every script that reads it agrees
 DOMAIN=${DOMAIN:-RRFS_NA_3km}
+# dev-sci's shared fix tree, where the domain files (ecf/defs/domains) find other grids' fix files
+case ${MACHINE} in
+  WCOSS2) FIX_RRFS_SHARED=${FIX_RRFS_SHARED:-/lfs/h2/emc/lam/noscrub/emc.lam/FIX_RRFS} ;;
+  *)      FIX_RRFS_SHARED=${FIX_RRFS_SHARED:-/scratch4/BMC/rtrr/FIX_RRFS} ;;
+esac

@@ -59,6 +59,8 @@ if [ -d /apps/ops/prod ]; then # On WCOSS2
   set +x
   module load prod_util/${prod_util_ver}
   module load prod_envir/${prod_envir_ver}
+  # Developer retros (make_rrfs_retro_def.sh) read staged DCOM data instead of prod_envir's
+  if [ -n "%DCOMROOT:%" ]; then export DCOMROOT=%DCOMROOT:%; fi
   echo "Listing modules from head.h:"
   module list
   set -x

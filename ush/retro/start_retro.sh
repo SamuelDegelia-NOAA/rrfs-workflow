@@ -11,8 +11,9 @@
 #   --reload  the suites are already loaded: delete and reload them. Their state is lost, so the
 #             retro starts over from RETRO_START.
 #
-# Run from any Ursa login node. The server runs on uecflow01 at the port the ecflow module gives
-# you (1500 + uid) unless ECF_PORT is already set.
+# Run from any login node. On Ursa the server runs on uecflow01 at the port the ecflow module gives
+# you (1500 + uid), and this script starts it. On WCOSS2 start it yourself first with NCO's
+# server_check.sh on ECFLOW_HOST; its port is uid + 2000. Either way an ECF_PORT already set wins.
 #
 set -eu
 
@@ -32,14 +33,17 @@ die() { echo "ERROR: $*" >&2; exit 1; }
 
 # shellcheck source=/dev/null
 . "${repo}/ecf/defs/load_retro_config.sh"
-# the server start below is Ursa's (ssh to the ecflow host, port 1500 + uid)
-[ "${MACHINE}" = "URSA" ] || die "MACHINE=${MACHINE} is not supported; start_retro.sh runs on URSA only so far"
+case ${MACHINE} in
+  URSA)   default_port=$((1500 + $(id -u))) ;;
+  WCOSS2) default_port=$((2000 + $(id -u))) ;;
+  *) die "MACHINE=${MACHINE} is not supported; start_retro.sh runs on URSA and WCOSS2" ;;
+esac
 if ! type module >/dev/null 2>&1; then source /etc/profile; fi
-# the module sets ECF_PORT to the user's default (1500 + uid), so keep a port chosen beforehand
+# the module may set ECF_PORT (Ursa: to 1500 + uid), so keep a port chosen beforehand
 port_requested=${ECF_PORT:-}
 module load "ecflow/${ECFLOW_VER}" >/dev/null 2>&1 || die "cannot load ecflow/${ECFLOW_VER}"
 export ECF_HOST=${ECFLOW_HOST}
-export ECF_PORT=${port_requested:-$((1500 + $(id -u)))}
+export ECF_PORT=${port_requested:-${default_port}}
 echo "repo:   ${repo}"
 echo "server: ${ECF_HOST}:${ECF_PORT}   ECF_HOME: ${ECF_HOME}"
 echo "retro:  ${RETRO_START} to ${RETRO_END}"
@@ -69,6 +73,12 @@ printf '%s\n' "${gen_out}" | head -1
 step "C: ecflow server"
 if ping_ok; then
   echo "a server is already running on ${ECF_HOST}:${ECF_PORT}; using it"
+elif [ "${MACHINE}" = "WCOSS2" ]; then
+  # NCO's development servers are started through their own script, which also registers them
+  die "no server answers on ${ECF_HOST}:${ECF_PORT}. Start it first: ssh ${ECF_HOST}, then
+       export ECF_ROOT=\$HOME/ecflow ECF_OUTPUTDIR=\$HOME/ecflow LFS_OUTPUTDIR=\$HOME/ecflow ECF_COMDIR=\$HOME/ecflow
+       mkdir -p \$ECF_ROOT; /apps/ops/prod/nco/core/ecflow.v5.6.0.14/scripts/server_check.sh
+       and answer yes. Then re-run this script; the steps before this one are safe to repeat."
 else
   # setsid gives the server its own session: a plain "nohup ... &" keeps the ssh session open for
   # as long as the server runs. The timeout is a backstop; whether the server answers is what counts.

@@ -16,8 +16,8 @@ out_def=${1:-${defs_dir}/rrfs_retro.def}
 # shellcheck source=/dev/null
 . "${defs_dir}/load_retro_config.sh"
 case ${MACHINE} in
-  URSA) ;;
-  *) echo "MACHINE=${MACHINE} is not supported; the retro suite runs on URSA only so far" >&2; exit 1 ;;
+  URSA|WCOSS2) ;;
+  *) echo "MACHINE=${MACHINE} is not supported; the retro suite runs on URSA and WCOSS2" >&2; exit 1 ;;
 esac
 
 # Derived from the settings above
@@ -56,6 +56,15 @@ awk -v q="'" -v machine="${MACHINE}" -v ph="${PACKAGEHOME}" -v eh="${ECF_HOME}" 
     ed("OUTPUTDIR", od)
     ed("ECF_HOME", eh)
     ed("ECF_INCLUDE", ph "/ecf/include")
+    if (machine == "WCOSS2") {
+      # The cards carry the #PBS job sizes. -o puts the output where ecflow looks for it, since the
+      # cards only say -j oe. Coarser domains (strip when merging to the nco branch): QSUB_OVERRIDES
+      # carries per-task job sizes for other domains; qsub options win over the #PBS lines too.
+      ed("QSUB_OVERRIDES", "")
+      ed("ECF_JOB_CMD", "qsub -o %ECF_JOBOUT% %QSUB_OVERRIDES% %ECF_JOB% 1> %ECF_JOB%.sub 2>&1")
+      ed("ECF_KILL_CMD", "qdel %ECF_RID% 1> %ECF_JOB%.kill 2>&1")
+      ed("ECF_STATUS_CMD", "qstat -f %ECF_RID% 1> %ECF_JOB%.stat 2>&1")
+    }
     if (machine == "URSA") {
       # sbatch would otherwise also read the #PBS lines (e.g. "-q" as the partition).
       # Coarser domains (strip when merging to the nco branch): SBATCH_OVERRIDES carries
@@ -264,14 +273,33 @@ EOF
 fi
 
 # Coarser domains (strip when merging to the nco branch): give the tasks the domain's table
-# names their job sizes through SBATCH_OVERRIDES
+# names their job sizes through SBATCH_OVERRIDES on Ursa, or QSUB_OVERRIDES on WCOSS2. The table
+# is in sbatch terms; on WCOSS2 --nodes=N becomes N whole 128-core nodes and --time the walltime.
+# The node counts carry over because ranks per node come from the domain's PPN_* settings, which
+# all fit in a WCOSS2 node.
 if [ "${DOMAIN}" != "RRFS_NA_3km" ]; then
   # shellcheck source=/dev/null
   . "${defs_dir}/domains/${DOMAIN}.sh"
-  python3 - "${out_def}" "${DOMAIN_SBATCH[@]}" <<'EOF'
-import fnmatch, sys
-path = sys.argv[1]
-table = [a.split(":", 1) for a in sys.argv[2:]]
+  python3 - "${out_def}" "${MACHINE}" "${DOMAIN_SBATCH[@]}" <<'EOF'
+import fnmatch, re, sys
+path, machine = sys.argv[1], sys.argv[2]
+table = [a.split(":", 1) for a in sys.argv[3:]]
+
+def qsub_opts(sbatch):
+    out = []
+    for opt in sbatch.split():
+        m = re.fullmatch(r"--nodes=(\d+)", opt)
+        if m:
+            out.append(f"-l select={m.group(1)}:ncpus=128:mem=500G -l place=vscatter:excl")
+            continue
+        m = re.fullmatch(r"--time=([\d:]+)", opt)
+        if m:
+            out.append(f"-l walltime={m.group(1)}")
+            continue
+        sys.exit(f"no WCOSS2 equivalent for the domain job option {opt}")
+    return " ".join(out)
+
+var = "QSUB_OVERRIDES" if machine == "WCOSS2" else "SBATCH_OVERRIDES"
 out, n = [], 0
 for line in open(path).read().split("\n"):
     out.append(line)
@@ -279,7 +307,9 @@ for line in open(path).read().split("\n"):
     if len(t) >= 2 and t[0] == "task":
         opts = next((o for pat, o in table if fnmatch.fnmatch(t[1], pat)), None)
         if opts:
-            out.append(line[:len(line) - len(line.lstrip())] + f"  edit SBATCH_OVERRIDES '{opts}'")
+            if machine == "WCOSS2":
+                opts = qsub_opts(opts)
+            out.append(line[:len(line) - len(line.lstrip())] + f"  edit {var} '{opts}'")
             n += 1
 open(path, "w").write("\n".join(out))
 print(f"{n} tasks given job sizes for the domain")
