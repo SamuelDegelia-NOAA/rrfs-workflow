@@ -10,10 +10,10 @@
 # ecf/defs/make_rrfs_retro_def.sh when DOMAIN=RRFS_CONUS_13km in retro_config.sh.
 #
 
-# Fix files for this grid, from dev-sci's shared fix tree (FIX_RRFS_SHARED, set per machine in
-# load_retro_config.sh). setup_ecf_links.sh links each
-# one in as fix/<subdir>/RRFS_CONUS_13km beside the NA files. lam/ uses RRFS_CONUS_13km_Lake_fracSV
-# (420 x 252); FIX_RRFS lam/RRFS_CONUS_13km is an older 396 x 232 grid that does not match.
+# Fix files for this grid, from dev-sci's shared fix tree (FIX_RRFS_SHARED in retro_config.sh).
+# setup_ecf_links.sh links each one in as fix/<subdir>/RRFS_CONUS_13km beside the NA files. lam/
+# uses RRFS_CONUS_13km_Lake_fracSV (420 x 252); FIX_RRFS lam/RRFS_CONUS_13km is an older 396 x 232
+# grid that does not match.
 DOMAIN_FIX_LINKS=(
   "lam:${FIX_RRFS_SHARED}/lam/RRFS_CONUS_13km_Lake_fracSV"
   "gsi:${FIX_RRFS_SHARED}/gsi/RRFS_CONUS_13km"

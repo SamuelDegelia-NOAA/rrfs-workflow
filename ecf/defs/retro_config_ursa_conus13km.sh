@@ -25,7 +25,7 @@
 # Machine
 # ---------------------------------------------------------------------------------------------
 # Sets how jobs are submitted and which machine-specific job settings setup_ecf_links.sh applies.
-# URSA is the only machine supported so far.
+# URSA or WCOSS2.
 MACHINE=${MACHINE:-URSA}
 
 # ---------------------------------------------------------------------------------------------
@@ -64,6 +64,9 @@ ECFLOW_HOST=${ECFLOW_HOST:-uecflow01}     # host running the server (head.h read
 # ---------------------------------------------------------------------------------------------
 # fix tree; setup_ecf_links.sh links <repo>/fix to it
 FIX_RRFS_DIR=${FIX_RRFS_DIR:-/scratch4/NCEPDEV/fv3-cam/Shun.Liu/fix_nco_wcoss}
+# dev-sci's shared fix tree; the domain files (ecf/defs/domains) link other grids' fix files
+# from it
+FIX_RRFS_SHARED=${FIX_RRFS_SHARED:-/scratch4/BMC/rtrr/FIX_RRFS}
 # staged upstream data in NCO COM/DCOM layout (see make_links.sh in that directory)
 RETRO_DATA_ROOT=${RETRO_DATA_ROOT:-/scratch4/BMC/zrtrr/Samuel.Degelia/RRFS_RETRO_DATA_NCO}
 # Coarser domains (strip when merging to the nco branch): the model domain. RRFS_NA_3km

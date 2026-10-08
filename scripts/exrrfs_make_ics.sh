@@ -129,7 +129,7 @@ case "${extrn_mdl_name}" in
     # conditions from the parent deterministic post, whose products carry that domain's own grid
     # spacing and name rather than the NA ones. This task runs as the 1.5 km fire weather grid, so
     # the parent domain is not in its environment; take whichever natlev file the parent wrote.
-    if [ "${MACHINE}" = "URSA" ] && [ ! -e "${sysdir}/${fns_on_disk[0]}" ]; then
+    if [ "${RETRO:-NO}" = "YES" ] && [ ! -e "${sysdir}/${fns_on_disk[0]}" ]; then
       fn_parent=$( ls -1 ${sysdir}/rrfs.t${hh}z.natlev.*.f0${fcst_hh}.*.grib2 2>/dev/null | head -1 )
       if [ -n "${fn_parent}" ]; then
         fns_on_disk=( "$( basename ${fn_parent} )" )

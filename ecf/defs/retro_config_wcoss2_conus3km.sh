@@ -1,8 +1,9 @@
 #!/bin/bash
 #
-# Sample settings for an RRFS_NA_3km retro on WCOSS2.
+# Sample settings for an RRFS_CONUS_3km retro on WCOSS2.
 #
-# It is the Ursa sample (retro_config_ursa_na3km.sh) with WCOSS2 locations, account and server; the
+# It is retro_config_wcoss2_na3km.sh with DOMAIN (and RUN_SMOKE) set, which in turn is
+# the Ursa sample (retro_config_ursa_na3km.sh) with WCOSS2 locations, account and server; the
 # retro period and suite settings below the input data block are the same. Link or copy it to
 # ecf/defs/retro_config.sh and change the paths and server in the first blocks to your own.
 #
@@ -72,6 +73,10 @@ FIX_RRFS_DIR=${FIX_RRFS_DIR:-}
 FIX_RRFS_SHARED=${FIX_RRFS_SHARED:-/lfs/h2/emc/lam/noscrub/emc.lam/FIX_RRFS}
 # staged upstream data in NCO COM/DCOM layout (see make_links.sh in that directory)
 RETRO_DATA_ROOT=${RETRO_DATA_ROOT:-/lfs/h2/emc/lam/noscrub/samuel.degelia/RRFS_RETRO_DATA_NCO}
+# Coarser domains (strip when merging to the nco branch): the model domain. RRFS_NA_3km
+# is the operational v1 domain and changes nothing; any other value needs
+# ecf/defs/domains/<DOMAIN>.sh with its grid, fix files and job sizes.
+DOMAIN=${DOMAIN:-RRFS_CONUS_3km}
 
 # ---------------------------------------------------------------------------------------------
 # Retro period and suite
@@ -90,6 +95,9 @@ RUN_FIREWX=${RUN_FIREWX:-TRUE}
 # Two task types no retro needs; off as on Ursa. Both may work on WCOSS2, where operations runs them.
 RUN_GEMPAK=${RUN_GEMPAK:-FALSE}
 RUN_BUFRSND=${RUN_BUFRSND:-FALSE}
+# Coarser domains (strip when merging to the nco branch): smoke and dust run here, since
+# dev-sci provides fix/smoke_dust/RRFS_CONUS_3km.
+RUN_SMOKE=${RUN_SMOKE:-TRUE}
 
 # The 84 h deterministic forecast at 00z, 06z, 12z and 18z, with its post, product generation and
 # restarts. FALSE leaves the hourly 18 h forecasts alone and is the one setting that shortens a

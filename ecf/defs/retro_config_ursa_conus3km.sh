@@ -1,10 +1,11 @@
 #!/bin/bash
 #
-# Sample settings for an RRFS_NA_3km retro on WCOSS2.
+# Sample settings for an RRFS_CONUS_3km retro on Ursa.
 #
-# It is the Ursa sample (retro_config_ursa_na3km.sh) with WCOSS2 locations, account and server; the
-# retro period and suite settings below the input data block are the same. Link or copy it to
-# ecf/defs/retro_config.sh and change the paths and server in the first blocks to your own.
+# This is the configuration the CONUS 3 km retro day on this branch was tested with. It
+# differs from retro_config_ursa_na3km.sh only in DOMAIN.
+# Link or copy it to ecf/defs/retro_config.sh and change the paths and account in the first three
+# blocks to your own; everything below them is what the tested run used.
 #
 # This is the ecflow equivalent of the Rocoto workflow's ush/config.sh, for the parts we control.
 # It is sourced by ecf/setup_ecf_links.sh, ecf/defs/make_rrfs_retro_def.sh,
@@ -25,14 +26,13 @@
 # ---------------------------------------------------------------------------------------------
 # Sets how jobs are submitted and which machine-specific job settings setup_ecf_links.sh applies.
 # URSA or WCOSS2.
-MACHINE=${MACHINE:-WCOSS2}
+MACHINE=${MACHINE:-URSA}
 
 # ---------------------------------------------------------------------------------------------
 # Where the workflow writes
 # ---------------------------------------------------------------------------------------------
 # Everything this run produces hangs off one base directory.
-# A week of NA 3 km output is tens of TB, so the default is ptmp; note its purge policy.
-RETRO_WORK_BASE=${RETRO_WORK_BASE:-/lfs/h2/emc/ptmp/${USER}/ecflow_rrfs}
+RETRO_WORK_BASE=${RETRO_WORK_BASE:-/scratch4/NCEPDEV/fv3-cam/${USER}/ecflow_rrfs}
 
 # ecflow job files and their output (the server creates the task directories underneath)
 ECF_HOME=${ECF_HOME:-${RETRO_WORK_BASE}/submit}
@@ -44,34 +44,35 @@ DEV_PTMP=${DEV_PTMP:-${RETRO_WORK_BASE}/ptmp}
 DEV_DATAROOT=${DEV_DATAROOT:-${RETRO_WORK_BASE}/stmp}
 
 # ---------------------------------------------------------------------------------------------
-# PBS
+# Slurm
 # ---------------------------------------------------------------------------------------------
-PROJ=${PROJ:-RRFS}                        # the cards add -DEV: "-A RRFS-DEV"
-QUEUE=${QUEUE:-dev}
-# NCO keeps the production job sizes (115-node forecasts); EMC selects the smaller dev resources
-# and 52-node forecast layouts that EMC's WCOSS2 parallels run.
+PROJ=${PROJ:-fv3-cam}                     # account
+QUEUE=${QUEUE:-batch}                     # QOS
+PARTITION=${PARTITION:-u1-compute}
+# NCO keeps the production job sizes; EMC selects the smaller dev resources and the 52-node
+# forecast layouts, which is what fits Ursa's 75-node per-job limit.
 RESOURCE_CONFIG=${RESOURCE_CONFIG:-EMC}
 
 # ---------------------------------------------------------------------------------------------
 # ecflow
 # ---------------------------------------------------------------------------------------------
-# Start the server with NCO's server_check.sh on one of the development ecflow hosts (cdecflow01/02,
-# ddecflow01/02); its port is your uid + 2000. ECFLOW_VER must be a version "module avail ecflow"
-# lists, since every job loads it.
-ECFLOW_VER=${ECFLOW_VER:-5.6.0.14}
-ECFLOW_HOST=${ECFLOW_HOST:-ddecflow01}    # host running the server (head.h reads it as ECF_LOGHOST)
+ECFLOW_VER=${ECFLOW_VER:-5.11.4}
+ECFLOW_HOST=${ECFLOW_HOST:-uecflow01}     # host running the server (head.h reads it as ECF_LOGHOST)
 
 # ---------------------------------------------------------------------------------------------
 # Input data
 # ---------------------------------------------------------------------------------------------
-# fix tree; setup_ecf_links.sh links <repo>/fix to it. Leave it empty to keep a fix/ the clone
-# already has (NA 3 km only; another DOMAIN needs it set).
-FIX_RRFS_DIR=${FIX_RRFS_DIR:-}
+# fix tree; setup_ecf_links.sh links <repo>/fix to it
+FIX_RRFS_DIR=${FIX_RRFS_DIR:-/scratch4/NCEPDEV/fv3-cam/Shun.Liu/fix_nco_wcoss}
 # dev-sci's shared fix tree; the domain files (ecf/defs/domains) link other grids' fix files
 # from it
-FIX_RRFS_SHARED=${FIX_RRFS_SHARED:-/lfs/h2/emc/lam/noscrub/emc.lam/FIX_RRFS}
+FIX_RRFS_SHARED=${FIX_RRFS_SHARED:-/scratch4/BMC/rtrr/FIX_RRFS}
 # staged upstream data in NCO COM/DCOM layout (see make_links.sh in that directory)
-RETRO_DATA_ROOT=${RETRO_DATA_ROOT:-/lfs/h2/emc/lam/noscrub/samuel.degelia/RRFS_RETRO_DATA_NCO}
+RETRO_DATA_ROOT=${RETRO_DATA_ROOT:-/scratch4/BMC/zrtrr/Samuel.Degelia/RRFS_RETRO_DATA_NCO}
+# Coarser domains (strip when merging to the nco branch): the model domain. RRFS_NA_3km
+# is the operational v1 domain and changes nothing; any other value needs
+# ecf/defs/domains/<DOMAIN>.sh with its grid, fix files and job sizes.
+DOMAIN=${DOMAIN:-RRFS_CONUS_3km}
 
 # ---------------------------------------------------------------------------------------------
 # Retro period and suite
@@ -87,9 +88,16 @@ RUN_ENKF=${RUN_ENKF:-TRUE}
 RUN_ENSF=${RUN_ENSF:-TRUE}
 RUN_FIREWX=${RUN_FIREWX:-TRUE}
 
-# Two task types no retro needs; off as on Ursa. Both may work on WCOSS2, where operations runs them.
+# Two task types no retro needs, off by default on Ursa because neither works here:
+#   gempak   exrrfs_gempak.sh launches "mpiexec -configfile", the WCOSS2 cfp idiom, and has no
+#            srun arm, so every task exits 255
+#   bufrsnd  the station list fix/bufrsnd/<grid>/rrfs_profdat.<NSTAT> exists only for some grids,
+#            and on RRFS_NA_3km the 84 h sounding job runs past its 3 h card limit
 RUN_GEMPAK=${RUN_GEMPAK:-FALSE}
 RUN_BUFRSND=${RUN_BUFRSND:-FALSE}
+# Coarser domains (strip when merging to the nco branch): smoke and dust run here, since
+# dev-sci provides fix/smoke_dust/RRFS_CONUS_3km.
+RUN_SMOKE=${RUN_SMOKE:-TRUE}
 
 # The 84 h deterministic forecast at 00z, 06z, 12z and 18z, with its post, product generation and
 # restarts. FALSE leaves the hourly 18 h forecasts alone and is the one setting that shortens a
