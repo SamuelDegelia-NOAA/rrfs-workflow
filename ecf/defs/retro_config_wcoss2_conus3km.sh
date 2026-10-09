@@ -56,18 +56,20 @@ RESOURCE_CONFIG=${RESOURCE_CONFIG:-EMC}
 # ---------------------------------------------------------------------------------------------
 # ecflow
 # ---------------------------------------------------------------------------------------------
-# Start the server with NCO's server_check.sh on one of the development ecflow hosts (cdecflow01/02,
-# ddecflow01/02); its port is your uid + 2000. ECFLOW_VER must be a version "module avail ecflow"
-# lists, since every job loads it.
+# Start the server with NCO's server_check.sh, run on (ssh to) an ecflow host of whichever machine
+# is currently the development one: cdecflow01/02 for Cactus, ddecflow01/02 for Dogwood. After a
+# production switch the other machine's hosts refuse the login. Its port is your uid + 2000.
+# ECFLOW_VER must be a version "module avail ecflow" lists, since every job loads it.
 ECFLOW_VER=${ECFLOW_VER:-5.6.0.14}
-ECFLOW_HOST=${ECFLOW_HOST:-ddecflow01}    # host running the server (head.h reads it as ECF_LOGHOST)
+ECFLOW_HOST=${ECFLOW_HOST:-cdecflow01}    # host running the server (head.h reads it as ECF_LOGHOST)
 
 # ---------------------------------------------------------------------------------------------
 # Input data
 # ---------------------------------------------------------------------------------------------
-# fix tree; setup_ecf_links.sh links <repo>/fix to it. Leave it empty to keep a fix/ the clone
-# already has (NA 3 km only; another DOMAIN needs it set).
-FIX_RRFS_DIR=${FIX_RRFS_DIR:-}
+# fix tree; setup_ecf_links.sh links <repo>/fix to it. The production package's tree has the
+# workflow.conf_dev and _prod files the retro needs; NCO may remove a version once the next is
+# installed, so update the version here (or link a copy of your own) when the links break.
+FIX_RRFS_DIR=${FIX_RRFS_DIR:-/lfs/h1/ops/prod/packages/rrfs.v1.0.26/fix}
 # dev-sci's shared fix tree; the domain files (ecf/defs/domains) link other grids' fix files
 # from it
 FIX_RRFS_SHARED=${FIX_RRFS_SHARED:-/lfs/h2/emc/lam/noscrub/emc.lam/FIX_RRFS}
