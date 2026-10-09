@@ -23,6 +23,9 @@ awk -v q="'" -v ph="${PACKAGEHOME}" -v eh="${ECF_HOME}" -v com="${RETRO_DATA_ROO
   $1 == "suite" {
     print
     ed("ECF_HOME", eh)
+    # job logs next to the job files; the NCO dev ecflow servers set ECF_OUT to ~/ecflow, where the
+    # per-family log directories do not exist, so no job could write its output
+    ed("ECF_OUT", eh)
     ed("PACKAGEHOME", ph)
     ed("ECF_FILES", ph "/ush/prod_clone/ecf")
     ed("ENVIR", "prod")

@@ -56,6 +56,9 @@ awk -v q="'" -v machine="${MACHINE}" -v ph="${PACKAGEHOME}" -v eh="${ECF_HOME}" 
     ed("QUEUE_ARCH", queue)
     ed("OUTPUTDIR", od)
     ed("ECF_HOME", eh)
+    # job logs next to the job files; the NCO dev ecflow servers set ECF_OUT to ~/ecflow, where the
+    # per-family log directories do not exist, so no job could write its output
+    ed("ECF_OUT", eh)
     ed("ECF_INCLUDE", ph "/ecf/include")
     if (machine == "WCOSS2") {
       # The cards carry the #PBS job sizes. -o puts the output where ecflow looks for it, since the
