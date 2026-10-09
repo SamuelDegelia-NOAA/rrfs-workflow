@@ -52,20 +52,14 @@ DEFAULT_SUITE = "para"
 
 
 def settings_from_config():
-    """Fall back to ecf/defs/retro_config.sh (or its old name, ursa_config.sh) so this works
-    without any environment set up."""
+    """Fall back to ecf/defs/retro_config.sh so this works without any environment set up."""
     here = os.path.dirname(os.path.realpath(__file__))
     defs = os.path.join(here, "..", "..", "ecf", "defs")
     host = port = None
-    text = None
-    for name in ("retro_config.sh", "ursa_config.sh"):
-        try:
-            with open(os.path.join(defs, name)) as f:
-                text = f.read()
-            break
-        except OSError:
-            continue
-    if text is None:
+    try:
+        with open(os.path.join(defs, "retro_config.sh")) as f:
+            text = f.read()
+    except OSError:
         return host, port
     m = re.search(r"^ECFLOW_HOST=\$\{ECFLOW_HOST:-([^}]+)\}", text, re.M)
     if m:

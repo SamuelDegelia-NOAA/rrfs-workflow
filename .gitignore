@@ -23,7 +23,5 @@ logs/
 
 # Generated suite definitions: regenerate these files instead of committing them.
 ecf/defs/rrfs_retro.def
-ecf/defs/rrfs_ursa.def
 ush/prod_clone/ecf/defs_retro.def
 ecf/defs/retro_config.sh
-ecf/defs/ursa_config.sh
