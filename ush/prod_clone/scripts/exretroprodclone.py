@@ -88,9 +88,11 @@ def upstream_files(relpath, pdy, hh):
         return [f"gfs/v16.3/enkfgdas.{pdy}/{hh}/atmos/mem{m:03d}/gdas.t{hh}z.atmf009.nc"
                 for m in range(1, 81)]
 
+    # pgrb2b only: make_lbcs appends pgrb2a when it exists, and a staged file holding both a and b
+    # (GSL's) sits under the pgrb2b name with no pgrb2a beside it
     if re.fullmatch(r"gefs/v12\.3/members/d0_16/jgefs_pgrb2abp5_f\d+_done", relpath):
-        return [f"gefs/v12.3/gefs.{pdy}/{hh}/atmos/pgrb2{ab}p5/gep{m:02d}.t{hh}z.pgrb2{ab}.0p50.f{GEFS_LAST_FHR:03d}"
-                for m in range(1, 31) for ab in "ab"]
+        return [f"gefs/v12.3/gefs.{pdy}/{hh}/atmos/pgrb2bp5/gep{m:02d}.t{hh}z.pgrb2b.0p50.f{GEFS_LAST_FHR:03d}"
+                for m in range(1, 31)]
 
     if relpath == "nsst/v1.2/jnsst":
         return [f"nsst/v1.2/nsst.{pdy}/rtgssthr_grb_0.083.grib2"]
