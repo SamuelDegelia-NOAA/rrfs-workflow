@@ -137,7 +137,9 @@ DOMAIN_SBATCH=(
   "jrrfs_det_forecast:--nodes=1 --time=00:35:00"
   "jrrfs_det_forecast_long:--nodes=1 --time=02:30:00"
   "jrrfs_det_forecast_spinup:--nodes=1 --time=00:15:00"
-  # 40 min: a spinup analysis that read all 80 GDAS members ran past 20 min on WCOSS2
+  # the spinup analyses fall back to the 80 GDAS members at cold starts and on day 1; on a busy
+  # WCOSS2 those reads (10-30 s each) ran past 40 min
+  "jrrfs_det_analysis_gsi_spinup:--nodes=1 --time=01:30:00"
   "jrrfs_det_analysis_gsi*:--nodes=1 --time=00:40:00"
   "jrrfs_det_post_f*:--nodes=1"
   "jrrfs_det_make_ics:--nodes=1"
