@@ -13,6 +13,10 @@ script does two things each time it runs (once a minute from jretroprodclone.ecf
      open at once; the triggers hold each family's first cycles until the family before it has
      written their restarts.
 
+With RETRO_LAYOUT=chains the suites already hold every retro day (ecf/defs/retro/chain_suite.py),
+so step 2 becomes a throttle: the cycle families start suspended, and each pass resumes them oldest
+first while fewer than CYCLE_THROTTLE resumed cycles are incomplete, as Rocoto's cyclethrottle does.
+
 Settings (environment):
   ECF_HOST, ECF_PORT      ecflow server
   RETRO_COMROOT           COM tree with the staged data, e.g. .../RRFS_RETRO_DATA_NCO/com
@@ -21,6 +25,8 @@ Settings (environment):
   RRFS_SUITE, RRFS_VER    RRFS suite name and version family (default: para, v1.0)
   RETRO_FAMILY_WINDOW     how many primary families may be open at once, 1-4 (default 1). More than
                           one lets the 03z and 15z cold-start chains run side by side.
+  RETRO_LAYOUT            families (default) or chains, the layout the suites were generated with
+  CYCLE_THROTTLE          chains: how many resumed cycles may be incomplete at once (default 1)
   PRODCLONE_SUITE         default: prod_clone
   GFS_LAST_FHR            last GFS lead time staged (default 90); later leads check this one instead
   GEFS_LAST_FHR           last GEFS lead time staged (default 60)
@@ -53,6 +59,8 @@ STATE_FILE = os.environ["RETRO_STATE"]
 RRFS_SUITE = os.getenv("RRFS_SUITE", "para")
 RRFS_VER = os.getenv("RRFS_VER", "v1.0")
 FAMILY_WINDOW = int(os.getenv("RETRO_FAMILY_WINDOW", "1"))
+CHAINS = os.getenv("RETRO_LAYOUT", "families") == "chains"
+CYCLE_THROTTLE = int(os.getenv("CYCLE_THROTTLE", "1"))
 PRODCLONE_SUITE = os.getenv("PRODCLONE_SUITE", "prod_clone")
 GFS_LAST_FHR = int(os.getenv("GFS_LAST_FHR", "90"))
 GEFS_LAST_FHR = int(os.getenv("GEFS_LAST_FHR", "60"))
@@ -461,10 +469,9 @@ def step_dates(ci):
 
 def mark_upstream(ci, defs):
     counts = {"completed": 0, "waiting": 0, "unknown": 0}
-    for fam in FAMILIES:
-        fam_node = defs.find_abs_node(f"/{PRODCLONE_SUITE}/primary/{fam}")
-        if fam_node is None:
-            continue
+    # families 00-18, or <PDY>_00-18 with RETRO_LAYOUT=chains
+    for fam_node in defs.find_abs_node(f"/{PRODCLONE_SUITE}/primary").nodes:
+        fam = fam_node.name()[-2:]
         pdy = family_pdy(fam_node)
         if pdy is None:
             continue  # family not released yet
@@ -488,8 +495,39 @@ def mark_upstream(ci, defs):
     print("upstream tasks: " + ", ".join(f"{k} {v}" for k, v in counts.items()))
 
 
+def throttle_cycles(ci, defs):
+    """Resume suspended cycle families oldest first while fewer than CYCLE_THROTTLE resumed ones
+    are incomplete (RETRO_LAYOUT=chains)."""
+    cycles = []
+    for chain in defs.find_abs_node(f"/{RRFS_SUITE}/primary").nodes:
+        ver = defs.find_abs_node(f"{chain.get_abs_node_path()}/rrfs/{RRFS_VER}")
+        for cyc in ver.nodes if ver else []:
+            if re.fullmatch(r"\d\dz", cyc.name()):
+                cycles.append((family_pdy(chain) + cyc.name(), cyc))
+    cycles.sort(key=lambda c: c[0])
+    running = sum(1 for _, c in cycles if not c.is_suspended() and c.get_state() != COMPLETE)
+    waiting = [c for _, c in cycles if c.is_suspended()]
+    resume = waiting[:max(0, CYCLE_THROTTLE - running)]
+    for cyc in resume:
+        ci.resume(cyc.get_abs_node_path())
+        print(f"resumed {cyc.get_abs_node_path()}")
+    done = sum(1 for _, c in cycles if c.get_state() == COMPLETE)
+    if done == len(cycles):
+        print(f"retro finished: all {done} cycles complete")
+    else:
+        print(f"cycles: {done} of {len(cycles)} complete, {running + len(resume)} running or waiting "
+              f"(throttle {CYCLE_THROTTLE}), {len(waiting) - len(resume)} suspended")
+
+
 def main():
     ci = ecflow.Client()
+    if CHAINS:
+        ci.sync_local()
+        mark_upstream(ci, ci.get_defs())
+        ci.sync_local()
+        throttle_cycles(ci, ci.get_defs())
+        write_status()
+        return
     step_dates(ci)
     # read the server again so the families released above are checked in this pass
     ci.sync_local()
