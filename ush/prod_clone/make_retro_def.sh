@@ -29,7 +29,8 @@ fi
 awk -v q="'" -v ph="${PACKAGEHOME}" -v eh="${ECF_HOME}" -v com="${RETRO_DATA_ROOT}/com" \
     -v start="${RETRO_START}" -v end="${RETRO_END}" -v suite="${RRFS_SUITE}" \
     -v clone="${PRODCLONE_SUITE}" -v ev="${ECFLOW_VER}" \
-    -v det_cold="${det_cold}" '
+    -v det_cold="${det_cold}" \
+    -v window="${RETRO_FAMILY_WINDOW:-1}" '
   function ed(name, value) { print "  edit " name " " q value q }
   $1 == "suite" {
     print "suite " clone
@@ -49,6 +50,7 @@ awk -v q="'" -v ph="${PACKAGEHOME}" -v eh="${ECF_HOME}" -v com="${RETRO_DATA_ROO
     ed("PRODCLONE_SUITE", clone)
     ed("ALWAYS_COMPLETE", "nosofs")
     ed("DET_COLD_HR", det_cold)
+    ed("RETRO_FAMILY_WINDOW", window)
     print ""
     # the poller runs on the ecflow host every minute; submitting it through Slurm would be 1440 jobs a day
     print "  task jretroprodclone"

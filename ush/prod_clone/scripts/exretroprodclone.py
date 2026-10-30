@@ -9,8 +9,9 @@ script does two things each time it runs (once a minute from jretroprodclone.ecf
      date of its primary family (the PDY variable on /prod_clone/primary/HH).
   2. Steps the RRFS suite through the retro period: when /<RRFS_SUITE>/primary/HH/rrfs/<ver> is
      complete, it sets PDY on the next primary family (in both suites) and requeues it. Families are
-     released one at a time (00, 06, 12, 18, then 00 of the next day), because each family's first
-     cycles depend on the restarts of the family before it.
+     released in order (00, 06, 12, 18, then 00 of the next day), up to RETRO_FAMILY_WINDOW of them
+     open at once; the triggers hold each family's first cycles until the family before it has
+     written their restarts.
 
 Settings (environment):
   ECF_HOST, ECF_PORT      ecflow server
@@ -18,6 +19,8 @@ Settings (environment):
   RETRO_START, RETRO_END  first and last retro day (YYYYMMDD)
   RETRO_STATE             JSON file recording the last released family
   RRFS_SUITE, RRFS_VER    RRFS suite name and version family (default: para, v1.0)
+  RETRO_FAMILY_WINDOW     how many primary families may be open at once, 1-4 (default 1). More than
+                          one lets the 03z and 15z cold-start chains run side by side.
   PRODCLONE_SUITE         default: prod_clone
   GFS_LAST_FHR            last GFS lead time staged (default 90); later leads check this one instead
   GEFS_LAST_FHR           last GEFS lead time staged (default 60)
@@ -49,6 +52,7 @@ RETRO_END = os.environ["RETRO_END"]
 STATE_FILE = os.environ["RETRO_STATE"]
 RRFS_SUITE = os.getenv("RRFS_SUITE", "para")
 RRFS_VER = os.getenv("RRFS_VER", "v1.0")
+FAMILY_WINDOW = int(os.getenv("RETRO_FAMILY_WINDOW", "1"))
 PRODCLONE_SUITE = os.getenv("PRODCLONE_SUITE", "prod_clone")
 GFS_LAST_FHR = int(os.getenv("GFS_LAST_FHR", "90"))
 GEFS_LAST_FHR = int(os.getenv("GEFS_LAST_FHR", "60"))
@@ -68,6 +72,8 @@ COLD_START_TASKS = ("make_ics", "blend_ics", "make_lbcs")
 
 FAMILIES = ["00", "06", "12", "18"]
 COMPLETE = ecflow.State.complete
+if not 1 <= FAMILY_WINDOW <= len(FAMILIES):
+    sys.exit(f"ERROR: RETRO_FAMILY_WINDOW={FAMILY_WINDOW} must be 1 to {len(FAMILIES)}: each family exists once")
 
 
 def upstream_files(relpath, pdy, hh):
@@ -149,6 +155,40 @@ def next_family(fam, pdy):
 
 def rrfs_family(fam):
     return f"/{RRFS_SUITE}/primary/{fam}/rrfs/{RRFS_VER}"
+
+
+def resolve(base, ref):
+    """Absolute path of a trigger reference made from a node whose parent is <base>."""
+    return os.path.normpath(ref if ref.startswith("/") else os.path.join(base, ref))
+
+
+def old_instance_waiter(defs, fam):
+    """A queued node that still needs the instance of family <fam> that releasing it again replaces.
+
+    Requeuing a family resets the nodes other families trigger on, so a node still waiting on the old
+    instance would wait for the new one instead. The RRFS triggers between families point back at
+    earlier families (prep on the previous restart), except those from the family just before, which
+    point forward (clean on the next cycle's ensf) and so want the new instance. /prod_clone
+    references are left out: main() completes the new instance's upstream tasks from the staged
+    files in the same pass, so a node waiting on one waits seconds at most.
+    """
+    prev = FAMILIES[FAMILIES.index(fam) - 1]
+    target = f"/{RRFS_SUITE}/primary/{fam}/"
+    for other in FAMILIES:
+        if other in (fam, prev) or defs.find_abs_node(rrfs_family(other)).get_state() == COMPLETE:
+            continue
+        for node in nodes_under(defs.find_abs_node(f"/{RRFS_SUITE}/primary/{other}")):
+            if node.get_state() != ecflow.State.queued:
+                continue
+            base = node.get_abs_node_path().rsplit("/", 1)[0]
+            for expr in (node.get_trigger(), node.get_complete()):
+                if expr is None:
+                    continue
+                # node paths are the tokens with a slash; event and variable names follow a ":"
+                for ref in re.findall(r"[\w./]+", expr.get_expression()):
+                    if "/" in ref and (resolve(base, ref) + "/").startswith(target):
+                        return node.get_abs_node_path()
+    return None
 
 
 def release(ci, fam, pdy):
@@ -376,29 +416,47 @@ def save_state(state):
     os.replace(tmp, STATE_FILE)
 
 
-def step_dates(ci, defs):
+def step_dates(ci):
+    """Release families in order while the window has room. The state file records the last one
+    released, and in "held" the ones still suspended for main() to finish."""
     state = load_state()
     if state is None:
         prime_clone_history(ci, RETRO_START)
         release(ci, FAMILIES[0], RETRO_START)
-        save_state({"family": FAMILIES[0], "pdy": RETRO_START})
-        return
+        state = {"family": FAMILIES[0], "pdy": RETRO_START, "held": [FAMILIES[0]]}
+        save_state(state)
 
-    fam, pdy = state["family"], state["pdy"]
-    node = defs.find_abs_node(f"/{RRFS_SUITE}/primary/{fam}/rrfs/{RRFS_VER}")
-    if node is None:
-        sys.exit(f"ERROR: /{RRFS_SUITE}/primary/{fam}/rrfs/{RRFS_VER} not found on the server")
-    status = node.get_state()
-    if status != COMPLETE:
-        print(f"primary/{fam} for {pdy} is {status}; waiting")
-        return
-
-    nfam, npdy = next_family(fam, pdy)
-    if npdy > RETRO_END:
-        print(f"retro finished: primary/{fam} for {pdy} was the last family")
-        return
-    release(ci, nfam, npdy)
-    save_state({"family": nfam, "pdy": npdy})
+    while True:
+        ci.sync_local()
+        defs = ci.get_defs()
+        fam, pdy = state["family"], state["pdy"]
+        for f in FAMILIES:
+            if defs.find_abs_node(rrfs_family(f)) is None:
+                sys.exit(f"ERROR: {rrfs_family(f)} not found on the server")
+        nfam, npdy = next_family(fam, pdy)
+        if npdy > RETRO_END:
+            status = defs.find_abs_node(rrfs_family(fam)).get_state()
+            if status == COMPLETE:
+                print(f"retro finished: primary/{fam} for {pdy} was the last family")
+            else:
+                print(f"all families released; primary/{fam} for {pdy} is {status}")
+            return
+        # the family about to be reused has to be done with its previous date
+        status = defs.find_abs_node(rrfs_family(nfam)).get_state()
+        if status != COMPLETE:
+            print(f"primary/{nfam} is {status}; waiting before releasing it for {npdy}")
+            return
+        busy = [f for f in FAMILIES if defs.find_abs_node(rrfs_family(f)).get_state() != COMPLETE]
+        if len(busy) >= FAMILY_WINDOW:
+            print(f"primary/{','.join(busy)} open (window {FAMILY_WINDOW}); waiting")
+            return
+        waiter = old_instance_waiter(defs, nfam)
+        if waiter:
+            print(f"waiting to release primary/{nfam} for {npdy}: {waiter} still needs the current one")
+            return
+        release(ci, nfam, npdy)
+        state = {"family": nfam, "pdy": npdy, "held": state.get("held", []) + [nfam]}
+        save_state(state)
 
 
 def mark_upstream(ci, defs):
@@ -432,22 +490,23 @@ def mark_upstream(ci, defs):
 
 def main():
     ci = ecflow.Client()
-    ci.sync_local()
-    defs = ci.get_defs()
-    step_dates(ci, defs)
+    step_dates(ci)
     # read the server again so the families released above are checked in this pass
     ci.sync_local()
     defs = ci.get_defs()
     state = load_state()
-    if state:
-        skip_first_day(ci, defs, state["family"], state["pdy"])
-        # release() suspends the family so the skip above wins the race with the scheduler
-        fam_path = rrfs_family(state["family"])
-        if defs.find_abs_node(fam_path).is_suspended():
-            ci.resume(fam_path)
-            print(f"resumed {fam_path}")
+    if state and state.get("held"):
+        for fam in state["held"]:
+            skip_first_day(ci, defs, fam, family_pdy(defs.find_abs_node(f"/{RRFS_SUITE}/primary/{fam}")))
+            # release() suspends the family so the skip above wins the race with the scheduler
+            fam_path = rrfs_family(fam)
+            if defs.find_abs_node(fam_path).is_suspended():
+                ci.resume(fam_path)
+                print(f"resumed {fam_path}")
+        state["held"] = []
+        save_state(state)
         ci.sync_local()
-        defs = ci.get_defs()
+    defs = ci.get_defs()
     mark_upstream(ci, defs)
     write_status()
 
